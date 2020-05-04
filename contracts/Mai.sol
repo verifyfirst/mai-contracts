@@ -1,4 +1,6 @@
 pragma solidity 0.6.4;
+
+import "@nomiclabs/buidler/console.sol";
 //ERC20 Interface nice
 interface ERC20 {
     function totalSupply() external view returns (uint256);
