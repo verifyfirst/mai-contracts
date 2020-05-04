@@ -260,7 +260,7 @@ contract Mai is ERC20{
             mapCDPData[CDP].collateral -= liquidatedCollateral;
             mapCDPData[CDP].debt -= debtDeleted;
             emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
-            _burn(debtDeleted);
+            //_burn(debtDeleted);
             //require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
             return true;
         }   else {

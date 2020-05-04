@@ -40,7 +40,7 @@ function int2BN(int) { return (new BigNumber(int)) }
 function int2Str(int) { return ((int).toString()) }
 function int2Num(int) { return (int / (1 * 10 ** 18)) }
 function roundBN2Str(BN) {
-  const BN_ = (new BigNumber(BN)).toPrecision(3)
+  const BN_ = (new BigNumber(BN)).toPrecision(9)
   return BN2Str(BN_)
 }
 function roundBN2StrR(BN, x) {
