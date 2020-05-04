@@ -1,6 +1,5 @@
 pragma solidity 0.6.4;
 
-import "@nomiclabs/buidler/console.sol";
 //ERC20 Interface nice
 interface ERC20 {
     function totalSupply() external view returns (uint256);
@@ -173,7 +172,7 @@ contract MAI is ERC20{
         exchanges.push(address(0));
 
         _transfer(address(this), msg.sender, purchasingPower);
-        emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
+        //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
       
     }
 
@@ -365,7 +364,7 @@ contract MAI is ERC20{
 
     function getCLPLiquidation(uint256 x, uint256 X, uint256 Y) public pure returns (uint256 y){
         // y = (x * Y * (X - x))/(x + X)^2
-        uint256 numerator = x.mul(Y.mul(X.sub(x)));
+        uint256 numerator = (x.mul(Y.mul(X.sub(x))));
         uint256 denominator = (x.add(X)).mul(x.add(X));
         y = numerator.div(denominator);
         return y;

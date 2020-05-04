@@ -9,30 +9,31 @@ var instanceMAI; var addressMAI; var instanceUSD; var addressUSD;
 var acc0; var acc1; var acc2; var acc3;
 
 var _1 = 1 * 10 ** 18; // 1 ETH
-const _1BN = new BigNumber(_1)
+const _1BN = new BigNumber(1 * 10 ** 18)
 var _dot01 = new BigNumber(1 * 10 ** 16)
 var _dot2 = new BigNumber(2 * 10 ** 17)
 const addressETH = "0x0000000000000000000000000000000000000000"
 var addressUSD;
-const etherPool = { "asset": (1 * _dot01).toString(), "mai": (int2BN(2).times(_1BN)).toFixed() }
+const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
 const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
+const maiBalanceInit = 4000000000000000000;
 
 
 contract('MAI', function (accounts) {
 
     constructor(accounts)
-    checkMath(_1)
+    checkMath(_dot01)
     checkPrices()
-    // openCDP(_1, 101, acc1)
+    openCDP(_dot01, 150, acc1)
     // liquidateCDP(acc1, 3333)
-    // openCDP(_dot01, 150, acc1)
-    // openCDP(_dot01, 101, acc1)
-    // testFailCDP(_dot01, 100, acc1)
-    // closeCDP(acc1, 5000)
+     openCDP(_dot01, 150, acc1)
+     openCDP(_dot01, 101, acc1)
+     testFailCDP(_dot01, 100, acc1)
+    //closeCDP(acc1, 5000)
     // openCDP(_dot01, 150, acc1)
     // addCollateralToCDP(_dot01, acc1)
     // remintMAIFromCDP(101, acc1)
-    //closeCDP(acc1, 10000)
+    // closeCDP(acc1, 10000)
   })
 
 //################################################################
@@ -43,7 +44,7 @@ function int2BN(int) { return (new BigNumber(int)) }
 function int2Str(int) { return ((int).toString()) }
 function int2Num(int) { return (int / (1 * 10 ** 18)) }
 function roundBN2Str(BN) {
-  const BN_ = (new BigNumber(BN)).toPrecision(9)
+  const BN_ = (new BigNumber(BN)).precision(15, 1)
   return BN2Str(BN_)
 }
 function roundBN2StrR(BN, x) {
@@ -149,12 +150,12 @@ function checkMath(_val) {
     var newDebt; var newCollateral;
   
     it("Allows opening CDP", async () => {
-      //CDP = (await instanceMAI.mapAddressMemberData.call(_acc)).CDP
-      const CDP = BN2Int(await instanceMAI.mapAddressMemberData.call(_acc))
+      //CDP = (await instanceMAI.mapAddress_MemberData.call(_acc)).CDP
+      const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_acc))
       //console.log("CDP:", CDP)
       if (CDP > 0) {
-        existingDebt = BN2Int((await instanceMAI.mapCDPData.call(CDP)).debt)
-        existingCollateral = new BigNumber((await instanceMAI.mapCDPData.call(CDP)).collateral)
+        existingDebt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
+        existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
       }
   
       const ethPPInMAI = roundBN2Str(await instanceMAI.getEtherPPinMAI(int2Str(_eth)))
@@ -191,31 +192,31 @@ function checkMath(_val) {
     //test balance of account 0 for mai has increased
     it("tests balances of MAI", async () => {
       let addressMAIBal = BN2Int(await instanceMAI.balanceOf(addressMAI))
-      assert.equal(addressMAIBal, 0, "correct addressMAIBal bal");
+      assert.equal(addressMAIBal, maiBalanceInit, "correct addressMAIBal bal");
   
       let acc0Bal = roundBN2Str(await instanceMAI.balanceOf(_acc))
-      assert.equal(acc0Bal, roundBN2Str((+newDebt + +existingDebt)), "correct _acc bal");
+      assert.equal(acc0Bal, roundBN2Str((+newDebt + +existingDebt )), "correct _acc bal");
   
       let maiSupply = roundBN2Str(await instanceMAI.totalSupply())
-      assert.equal(maiSupply, roundBN2Str((+newDebt + +existingDebt)), "correct new supply")
+      assert.equal(maiSupply, roundBN2Str((+newDebt + +existingDebt + maiBalanceInit)), "correct new supply")
       //console.log(addressMAIBal, acc0Bal, maiSupply)
   
     })
   
     // Test mappings
     it("Tests mappings", async () => {
-      CDP = BN2Int(await instanceMAI.mapAddressMemberData(_acc))
+      CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
   
       let countOfCDPs = await instanceMAI.countOfCDPs()
       assert.equal(countOfCDPs, CDP, "correct countOfCDPs");
   
-      let _CDP = BN2Int(await instanceMAI.mapAddressMemberData(_acc))
-      assert.equal(_CDP, CDP, "correct mapAddressMemberData");
+      let _CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
+      assert.equal(_CDP, CDP, "correct mapAddress_MemberData");
   
-      let mapCDPData = await instanceMAI.mapCDPData(_CDP);
-      assert.equal(mapCDPData.collateral, +newCollateral + +existingCollateral, "CDP Collateral")
-      assert.equal(roundBN2Str(mapCDPData.debt), roundBN2Str(+newDebt + +existingDebt), "CDP Debt");
-      assert.equal(mapCDPData.owner, _acc, "correct owner");
+      let mapCDP_Data = await instanceMAI.mapCDP_Data(_CDP);
+      assert.equal(mapCDP_Data.collateral, +newCollateral + +existingCollateral, "CDP Collateral")
+      assert.equal(roundBN2Str(mapCDP_Data.debt), roundBN2Str(+newDebt + +existingDebt), "CDP Debt");
+      assert.equal(mapCDP_Data.owner, _acc, "correct owner");
     })
   }
   
@@ -232,11 +233,11 @@ function checkMath(_val) {
   
     it("Allows adding to  CDP", async () => {
   
-      let CDP = BN2Int(await instanceMAI.mapAddressMemberData(_acc))
+      let CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
       //console.log("CDP", CDP)
-      let existingDebt = BN2Int((await instanceMAI.mapCDPData(CDP)).debt)
+      let existingDebt = BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
       //console.log("existingDebt", existingDebt)
-      let existingCollateral = new BigNumber((await instanceMAI.mapCDPData(CDP)).collateral)
+      let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
       const ethPP = getEtherPPinMAI(existingCollateral.plus(_eth))
       const cltrzn  = Math.round((ethPP * 100) / existingDebt)
       //open CDP
@@ -250,7 +251,7 @@ function checkMath(_val) {
       assert.equal(BN2Int(tx1.logs[0].args.collateralAdded), _eth, "collateral is correct");
       assert.equal(BN2Int(tx1.logs[0].args.collateralisation), cltrzn, "collateralisation is correct");
   
-      let newCollateral = new BigNumber((await instanceMAI.mapCDPData(CDP)).collateral)
+      let newCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
       assert.equal(BN2Int(newCollateral), BN2Int(existingCollateral.plus(_eth)), "New collateral is correct")
     });
   }
@@ -261,9 +262,9 @@ function checkMath(_val) {
   
     it("Allows reminting MAI from CDP", async () => {
   
-      let CDP = BN2Int(await instanceMAI.mapAddressMemberData(_acc))
-      let existingDebt = BN2Int((await instanceMAI.mapCDPData(CDP)).debt)
-      let existingCollateral = new BigNumber((await instanceMAI.mapCDPData(CDP)).collateral)
+      let CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
+      let existingDebt = BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
+      let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
       const purchasingPower = getEtherPPinMAI(existingCollateral);//how valuable Ether is in MAI
       const maxMintAmount = (purchasingPower * _ratio) / 100;
       const additionalMintAmount = maxMintAmount - existingDebt;
@@ -306,11 +307,11 @@ function checkMath(_val) {
     it("Allows closing CDP", async () => {
   
       let accEth1 = BN2Int(await web3.eth.getBalance(_acc))
-      CDP = BN2Int(await instanceMAI.mapAddressMemberData(_acc))
+      CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
       //console.log("CDP", CDP)
-      let existingDebt = BN2Int((await instanceMAI.mapCDPData(CDP)).debt)
+      let existingDebt = BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
       //console.log("existingDebt", existingDebt)
-      let existingCollateral = new BigNumber((await instanceMAI.mapCDPData(CDP)).collateral)
+      let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
   
       let debtClosed = existingDebt * (_bp / 10000)
       let collateralReturned = existingCollateral * (_bp / 10000)
@@ -334,27 +335,27 @@ function checkMath(_val) {
       assert.equal(BN2Int(accBal), debtRemain, "correct acc0 bal");
   
       let maiSupply = await instanceMAI.totalSupply()
-      assert.equal(maiSupply, debtRemain, "correct new supply")
+      assert.equal(roundBN2Str(maiSupply), roundBN2Str(debtRemain), "correct new supply")
   
       const tx = await web3.eth.getTransaction(tx1.tx);
       const gasCost = tx.gasPrice * tx1.receipt.gasUsed;
-      //console.log(accEth1, etherReturned, gasCost)
-      //console.log((accEth1 + etherReturned) - gasCost)
   
       let accEth2 = roundBN2StrR(await web3.eth.getBalance(_acc), 3)
       assert.equal(accEth2, roundBN2StrR((+accEth1 + +BN2Int(existingCollateral) - gasCost), 3), "gas test")
   
-      let accEthMAI = roundBN2Str(await web3.eth.getBalance(addressMAI))
-      assert.equal(accEthMAI, roundBN2Str(collateralRemain), "ethaccBal")
+      let balMAI = roundBN2Str(await web3.eth.getBalance(addressMAI))
+      console.log(balMAI)
+      assert.equal(balMAI , collateralRemain , "Correct acount balance")
+      
   
     })
   
     // Test mappings
     it("Tests mappings", async () => {
   
-      let mapCDPData = await instanceMAI.mapCDPData(CDP);
-      assert.equal(mapCDPData.collateral, collateralRemain, "correct collateral");
-      assert.equal(mapCDPData.debt, debtRemain, "correct debt");
+      let mapCDP_Data = await instanceMAI.mapCDP_Data(CDP);
+      assert.equal(mapCDP_Data.collateral, collateralRemain, "correct collateral");
+      assert.equal(mapCDP_Data.debt, debtRemain, "correct debt");
   
     })
   }
@@ -365,9 +366,9 @@ function checkMath(_val) {
   
     it("Allows liquidation of CDP", async () => {
   
-      const CDP = BN2Int(await instanceMAI.mapAddressMemberData.call(_acc))
-      existingDebt = BN2Int((await instanceMAI.mapCDPData.call(CDP)).debt)
-      existingCollateral = BN2Int((await instanceMAI.mapCDPData.call(CDP)).collateral)
+      const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_acc))
+      existingDebt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
+      existingCollateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
       console.log(existingDebt, existingCollateral)
       const canLiquidate = checkLiquidateCDP(existingCollateral, existingDebt)
       const canLiquidateSC = await instanceMAI.checkLiquidationPoint(CDP)
