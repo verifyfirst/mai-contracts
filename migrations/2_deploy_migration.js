@@ -1,5 +1,7 @@
-const Mai = artifacts.require( "Mai");
+const MAI = artifacts.require( "MAI");
+const tokenUSD = artifacts.require( "tokenUSD");
 
 module.exports = function(deployer) {
-  deployer.deploy(Mai);
+  deployer.deploy(MAI);
+  deployer.deploy(tokenUSD);
 };
