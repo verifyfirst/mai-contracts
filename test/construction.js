@@ -59,12 +59,19 @@ function logType(thing) {
   console.log("%s type", thing, typeof thing)
 }
 
+function logState() {
+  // log balanceETH of addressMAI, acc0, acc1
+  // log balanceMAI of addressMAI, acc0, acc1
+  // log CDP of acc0: debt, collateral
+  // log balances of etherPool.asset, etherPool.mai, price(_1), PP(_1)
+  // log balances of usdPool.asset, etherPool.mai, price(_1), PP(_1)
+}
+
 //################################################################
 // CONSTRUCTION
 function constructor(accounts) {
   acc0 = accounts[0]; acc1 = accounts[1]; acc2 = accounts[2]; acc3 = accounts[3]
 
-  
   it("constructor events", async () => {
     const balance = await web3.eth.getBalance(acc0)
     console.log('balance of acc0', balance/(_1))
