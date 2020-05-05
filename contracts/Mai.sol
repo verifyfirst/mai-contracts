@@ -64,6 +64,8 @@ contract MAI is ERC20{
     uint256 public defaultCollateralisation;
     uint256 public etherPrice;
     address exchangeUSD;
+    uint256 public mintedMAI;
+    uint256 public pooledMAI;
 
     struct MemberData {
         address[] exchanges;

@@ -23,12 +23,12 @@ const initialMAI = 4 * _1; const initialETH = 3*10**16;
 contract('MAI', function (accounts) {
 
     constructor(accounts)
-    checkMath(_dot001)
-    checkPrices(_dot001)
-    openCDP(_dot001, 150, acc1)
-    liquidateCDP(acc1, 3333)
-    openCDP(_dot001, 101, acc1)
-    openCDP(_dot001, 151, acc1)
+    // checkMath(_dot001)
+    // checkPrices(_dot001)
+    openCDP(_dot001, 110, acc1) // <- gets 0.15
+    liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
+    openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
+    openCDP(_dot001, 110, acc1)
     testFailCDP(_dot001, 100, acc1)
      closeCDP(acc1, 5000)
     openCDP(_dot001, 150, acc1)
@@ -153,7 +153,7 @@ function checkMath(_val) {
   function openCDP(_eth, _ratio, _acc) {
   
     var existingDebt = 0; var existingCollateral = 0; var CDP;
-    var newDebt; var newCollateral;
+    var newDebt; var newCollateral; var acc0Bal;
   
     it("Allows opening CDP", async () => {
       //CDP = (await instanceMAI.mapAddress_MemberData.call(_acc)).CDP
@@ -174,6 +174,8 @@ function checkMath(_val) {
      // console.log("mintAmount", mintAmount)
       newDebt = roundBN2StrD(mintAmount)
       newCollateral = _eth
+
+      acc0Bal = BN2Int(await instanceMAI.balanceOf(_acc))
   
       var tx1;
       if (_ratio === 150) {
@@ -201,11 +203,13 @@ function checkMath(_val) {
       let addressMAIBal = BN2Int(await instanceMAI.balanceOf(addressMAI))
       assert.equal(addressMAIBal, initialMAI, "correct addressMAIBal bal");
   
-      let acc0Bal = BN2Int(await instanceMAI.balanceOf(_acc))
-      assert.equal(roundBN2StrDR(acc0Bal, 10), roundBN2StrDR((+newDebt + existingDebt),10), "correct _acc bal");
+      let acc0Bal1 = BN2Int(await instanceMAI.balanceOf(_acc))
+      console.log(newDebt, existingDebt)
+      console.log('acc0Bal', acc0Bal1)
+      assert.equal(roundBN2StrDR(acc0Bal1, 10), roundBN2StrDR((+acc0Bal + +newDebt),10), "correct _acc bal");
   
       let maiSupply = BN2Int(await instanceMAI.totalSupply())
-      assert.equal(roundBN2StrD(maiSupply), roundBN2StrD((+newDebt + +existingDebt + initialMAI)), "correct new supply")
+      assert.equal(roundBN2StrD(maiSupply), roundBN2StrD((+acc0Bal + +newDebt + initialMAI)), "correct new supply")
       //console.log(addressMAIBal, acc0Bal, maiSupply)
   
     })
@@ -247,7 +251,7 @@ function checkMath(_val) {
       //console.log("existingDebt", existingDebt)
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
       const ethPP = getEtherPPinMAI(existingCollateral.plus(_eth))
-      const cltrzn  = Math.round((ethPP * 100) / existingDebt)
+      const cltrzn  = Math.floor((ethPP * 100) / existingDebt)
       //open CDP
       let tx1 = await instanceMAI.addCollateralToCDP({ from: _acc, to: addressMAI, value: _eth });
       assert.equal(tx1.logs.length, 1, "one event was triggered");
@@ -266,7 +270,7 @@ function checkMath(_val) {
   
   function remintMAIFromCDP(_ratio, _acc) {
   
-    var newDebt;
+    var newDebt; var accBal0; var additionalMintAmount; var maiSupply0;
   
     it("Allows reminting MAI from CDP", async () => {
   
@@ -275,10 +279,12 @@ function checkMath(_val) {
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
       const purchasingPower = getEtherPPinMAI(existingCollateral);//how valuable Ether is in MAI
       const maxMintAmount = (purchasingPower * _ratio) / 100;
-      const additionalMintAmount = BN2Int(maxMintAmount - existingDebt);
+      additionalMintAmount = BN2Int(maxMintAmount - existingDebt);
       newDebt = roundBN2StrD(additionalMintAmount + existingDebt)
       //console.log(purchasingPower, maxMintAmount, additionalMintAmount)
-  
+      accBal0 = roundBN2StrD(await instanceMAI.balanceOf(_acc))
+      maiSupply0 = BN2Int(await instanceMAI.totalSupply())
+
       let tx1 = await instanceMAI.remintMAIFromCDP(_ratio, { from: _acc, to: addressMAI});
       //console.log(tx1.logs[2])
       assert.equal(tx1.logs.length, 3, "three events were triggered");
@@ -297,11 +303,11 @@ function checkMath(_val) {
       let addressMAIBal = BN2Int(await instanceMAI.balanceOf(addressMAI))
       assert.equal(addressMAIBal, initialMAI, "correct addressMAIBal bal");
      
-      let acc0Bal = roundBN2StrD(await instanceMAI.balanceOf(_acc))
-      assert.equal(acc0Bal, newDebt, "correct _acc bal");
+      let accBal1 = roundBN2StrD(await instanceMAI.balanceOf(_acc))
+      assert.equal(accBal1, roundBN2StrD(+accBal0 + +additionalMintAmount), "correct _acc bal");
       
-      let maiSupply = BN2Int(await instanceMAI.totalSupply())
-      assert.equal(roundBN2StrD(maiSupply), roundBN2StrD((+newDebt + initialMAI)), "correct new supply")
+      let maiSupply1 = BN2Int(await instanceMAI.totalSupply())
+      assert.equal(roundBN2StrD(maiSupply1), roundBN2StrD((+additionalMintAmount + maiSupply0)), "correct new supply")
       //console.log(addressMAIBal, acc0Bal, maiSupply)
   
     })
@@ -310,7 +316,7 @@ function checkMath(_val) {
   function closeCDP(_acc, _bp) {
   
     var debtRemain; var collateralRemain;
-    var CDP;
+    var CDP; var accBal0; var maiSupply0; var balMAI0;
   
     it("Allows closing CDP", async () => {
   
@@ -326,6 +332,10 @@ function checkMath(_val) {
   
       debtRemain = existingDebt - debtClosed
       collateralRemain = existingCollateral - collateralReturned
+
+      accBal0 = BN2Int(await instanceMAI.balanceOf(_acc));
+      maiSupply0 = await instanceMAI.totalSupply()
+      balMAI0 = roundBN2StrD(await web3.eth.getBalance(addressMAI))
   
       let tx1 = await instanceMAI.closeCDP(_bp, { from: _acc });
       assert.equal(tx1.logs.length, 4, "Three events was triggered");
@@ -337,13 +347,13 @@ function checkMath(_val) {
       assert.equal(tx1.logs[3].args.CDP, 1, "CDP is correct");
       assert.equal(tx1.logs[3].args.owner, _acc, "Owner is correct");
       assert.equal(BN2Int(tx1.logs[3].args.debtPaid), debtClosed, "Debt is correct");
-      assert.equal(BN2Int(tx1.logs[3].args.etherReturned), collateralReturned, "Collateral is correct");
+      assert.equal(roundBN2StrD(tx1.logs[3].args.etherReturned), roundBN2StrD(collateralReturned), "Collateral is correct");
   
       let accBal = BN2Int(await instanceMAI.balanceOf(_acc));
-      assert.equal(roundBN2StrD(accBal), roundBN2StrD(debtRemain), "correct acc0 bal");
+      assert.equal(roundBN2StrD(accBal), roundBN2StrD(accBal0 - debtClosed), "correct acc0 bal");
   
-      let maiSupply = await instanceMAI.totalSupply()
-      assert.equal(roundBN2StrD(maiSupply), roundBN2StrD(debtRemain + initialMAI), "correct new supply")
+      let maiSupply1 = await instanceMAI.totalSupply()
+      assert.equal(roundBN2StrD(maiSupply1), roundBN2StrD(maiSupply0 - debtClosed), "correct new supply")
   
       const tx = await web3.eth.getTransaction(tx1.tx);
       const gasCost = tx.gasPrice * tx1.receipt.gasUsed;
@@ -351,9 +361,9 @@ function checkMath(_val) {
       let accEth2 = roundBN2StrDR(await web3.eth.getBalance(_acc), 3)
       assert.equal(accEth2, roundBN2StrDR((+accEth1 + +BN2Int(existingCollateral) - gasCost), 3), "gas test")
   
-      let balMAI = roundBN2StrD(await web3.eth.getBalance(addressMAI))
+      let balMAI1 = roundBN2StrDR(await web3.eth.getBalance(addressMAI), 9)
       //console.log(balMAI, existingDebt, existingCollateral, debtClosed, collateralReturned)
-      assert.equal(balMAI, collateralRemain+initialETH , "Correct acount balance")
+      assert.equal(balMAI1, roundBN2StrDR(+balMAI0 - +collateralReturned, 9), "Correct acount balance")
       
   
     })
@@ -362,7 +372,7 @@ function checkMath(_val) {
     it("Tests mappings", async () => {
   
       let mapCDP_Data = await instanceMAI.mapCDP_Data(CDP);
-      assert.equal(mapCDP_Data.collateral, collateralRemain, "correct collateral");
+      assert.equal(roundBN2StrD(mapCDP_Data.collateral), roundBN2StrD(collateralRemain), "correct collateral");
       assert.equal(roundBN2StrD(mapCDP_Data.debt), roundBN2StrD(debtRemain), "correct debt");
   
     })
@@ -392,13 +402,20 @@ function checkMath(_val) {
   
         console.log(CDP, _bp)
         let tx1 = await instanceMAI.liquidateCDP(CDP, _bp, { from: _acc });
-        console.log(tx1.logs)
+        // console.log(tx1.logs)
         assert.equal(tx1.logs.length, 1, "Three events were triggered");
         assert.equal(tx1.logs[0].event, "LiquidateCDP", "Correct event");
         assertLog(roundBN2StrD(tx1.logs[0].args.etherSold), liquidatedCollateral, "Correct liquidatedCollateral");
         assertLog(roundBN2StrD(tx1.logs[0].args.maiBought), maiBought, "Correct maiBought");
         assertLog(roundBN2StrD(tx1.logs[0].args.debtDeleted), debtDeleted, "Correct debtDeleted");
         assertLog(roundBN2StrD(tx1.logs[0].args.feeClaimed), fee, "Correct fee");
+
+        const finalDebt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
+        const finalCollateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
+
+        console.log('finals', finalDebt, finalCollateral)
+        let acc0Bal = BN2Int(await instanceMAI.balanceOf(_acc))
+        console.log('acc0Bal', acc0Bal)
   
       }
     })
