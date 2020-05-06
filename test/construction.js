@@ -1,6 +1,8 @@
 var MAI = artifacts.require("./MAI.sol");
 var USD = artifacts.require("./tokenUSD.sol");
 
+const Math = require('./core-math.js')
+
 const assert = require("chai").assert;
 const truffleAssert = require('truffle-assertions');
 var BigNumber = require('bignumber.js');
