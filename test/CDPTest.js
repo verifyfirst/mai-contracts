@@ -18,10 +18,10 @@ const usdPool = { "asset": (1000 * _1).toString(), "mai": (1100 * _1).toString()
 contract('Mai', function (accounts) {
 
   constructor(accounts)
-  // checkMath(_1)
+   checkMath(_1)
   // checkPrices()
-  openCDP(_1, 101, acc1)
-  liquidateCDP(acc1, 3333)
+  //openCDP(_1, 101, acc1)
+  //liquidateCDP(acc1, 3333)
   // openCDP(_dot01, 150, acc1)
   // openCDP(_dot01, 101, acc1)
   // testFailCDP(_dot01, 100, acc1)
