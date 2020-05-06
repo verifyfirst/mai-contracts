@@ -25,16 +25,18 @@ contract('MAI', function (accounts) {
     constructor(accounts)
     // checkMath(_dot001)
     // checkPrices(_dot001)
-    openCDP(_dot001, 110, acc1) // <- gets 0.15
-    liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
-    openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
-    openCDP(_dot001, 110, acc1)
-    testFailCDP(_dot001, 100, acc1)
-     closeCDP(acc1, 5000)
-    openCDP(_dot001, 150, acc1)
-    addCollateralToCDP(_dot001, acc1)
-    remintMAIFromCDP(101, acc1)
-    closeCDP(acc1, 10000)
+     openCDP(_dot001, 110, acc1) // <- gets 0.15
+    // logAccounts(acc1)
+      logPools(_1)
+    // liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
+    // openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
+    // openCDP(_dot001, 110, acc1)
+    // testFailCDP(_dot001, 100, acc1)
+    //  closeCDP(acc1, 5000)
+    // openCDP(_dot001, 150, acc1)
+    // addCollateralToCDP(_dot001, acc1)
+    // remintMAIFromCDP(101, acc1)
+    // closeCDP(acc1, 10000)
   })
 
 //################################################################
@@ -59,38 +61,89 @@ function logType(thing) {
   console.log("%s type", thing, typeof thing)
 }
 
-function logState() {
-  // log balanceETH of addressMAI, acc0, acc1
-  // log balanceMAI of addressMAI, acc0, acc1
-  // log CDP of acc0: debt, collateral
-  // log balances of etherPool.asset, etherPool.mai, price(_1), PP(_1)
-  // log balances of usdPool.asset, etherPool.mai, price(_1), PP(_1)
+function logPools(_eth) {
+  it("Logs all states", async () => {
+// log balances of etherPool.asset, etherPool.mai, price(_1), PP(_1)
+const etherPoolETHBalance = BN2Int(etherPool.asset);
+const etherPoolMAIBalance = BN2Int(etherPool.mai);
+const ethValueInMai = BN2Int(await instanceMAI.getValueInMAI(addressETH))
+const ethPriceInUSD = BN2Int(await instanceMAI.getEtherPriceInUSD(int2Str(_eth)))
+const ethPPInMAI = BN2Int(await instanceMAI.getEtherPPinMAI(int2Str(_eth)))
+console.log(" ")
+console.log("-------------------etherPool DETAILS--------------------")
+console.log('ETH Balance of etherPool: ', etherPoolETHBalance/(_1))
+console.log('MAI Balance of etherPool: ', etherPoolMAIBalance/(_1))
+console.log('MAI Price from etherPool: ', ethValueInMai/(_1))
+console.log('USD Price from etherPool: ', ethPriceInUSD/(_1))
+console.log('MAI PuPow from etherPool: ', ethPPInMAI/(_1))
+
+// log balances of usdPool.asset, etherPool.mai, price(_1), PP(_1)
+const usdPoolETHBalance = BN2Int(usdPool.asset);
+const usdPoolMAIBalance = BN2Int(usdPool.mai);
+const usdValueInMai = BN2Int(await instanceMAI.getValueInMAI(addressUSD))
+const maiPPInUSD = BN2Int(await instanceMAI.getMAIPPInUSD(int2Str(_eth)))
+console.log(" ")
+console.log("---------------------usdPool DETAILS--------------------")
+console.log('ETH Balance of usdPool:   ', usdPoolETHBalance/(_1))
+console.log('MAI Balance of usdPool:   ', usdPoolMAIBalance/(_1))
+console.log('MAI Price from usdPool:   ', usdValueInMai/(_1))
+console.log('MAI PuPow from usdPool:   ', maiPPInUSD/(_1))
+})
 }
 
-//################################################################
-// CONSTRUCTION
-function constructor(accounts) {
+ function logAccounts(_accCDP) {
+  it("Logs all states", async () => {
+
+  // log balanceETH of addressMAI, acc0, acc1
+  const acc0ETHbalance = await web3.eth.getBalance(acc0)
+  const acc1ETHbalance = await web3.eth.getBalance(acc1)
+  const addressETHbalance = await web3.eth.getBalance(addressETH)
+  console.log(" ")
+  console.log("----------------------ETH BALANCES---------------------")
+  console.log('acc0:       ', acc0ETHbalance/(_1))
+  console.log('acc1:       ', acc1ETHbalance/(_1))
+  console.log('addressETH: ', addressETHbalance/(_1))
+
+  // log balanceMAI of addressMAI, acc0, acc1
+  const acc0MAIBalance = BN2Int(await instanceMAI.balanceOf(acc0))
+  const acc1MAIBalance = BN2Int(await instanceMAI.balanceOf(acc1))
+  const addressMAIBalance = BN2Int(await instanceMAI.balanceOf(addressMAI))
+  console.log(" ")
+  console.log("-----------------------MAI BALANCES--------------------")
+  console.log('acc0:       ', acc0MAIBalance/(_1))  
+  console.log('acc1:       ', acc1MAIBalance/(_1))  
+  console.log('addressMAI: ', addressMAIBalance/(_1))  
+
+  // log CDP of accCDP: collateral, debt
+  const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_accCDP))
+  const Collateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
+  const Debt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
+  console.log(" ")
+  console.log("-----------------------CDP DETAILS----------------------")
+  console.log('CDP:        ', CDP)
+  console.log('Collateral: ', Collateral/(_1)) 
+  console.log('Debt:       ', Debt/(_1)) 
+
+  
+})
+}
+
+  //################################################################
+  // CONSTRUCTION
+  function constructor(accounts) {
   acc0 = accounts[0]; acc1 = accounts[1]; acc2 = accounts[2]; acc3 = accounts[3]
 
   it("constructor events", async () => {
-    const balance = await web3.eth.getBalance(acc0)
-    console.log('balance of acc0', balance/(_1))
-
     let USD = artifacts.require("tokenUSD.sol");
     instanceUSD = await USD.new();
     addressUSD = instanceUSD.address;
-    console.log('addressUSD: %s', addressUSD)
 
     let MAI = artifacts.require("MAI.sol");
     instanceMAI = await MAI.new(addressUSD, {value:initialETH});
     addressMAI = instanceMAI.address;
-    console.log('CoinAddress: %s', addressMAI)
-    console.log('Acc0: %s', acc0)
-
+    
     const supply = BN2Int(await instanceMAI.totalSupply())
-    // console.log(supply)
     assert.equal(supply, 4*_1, "supply is correct")
-
     const etherPool_asset = BN2Int((await instanceMAI.mapToken_ExchangeData(addressETH)).balanceAsset);
     assert.equal(etherPool_asset, etherPool.asset)
     const etherPool_mai = BN2Int((await instanceMAI.mapToken_ExchangeData(addressETH)).balanceMAI);
@@ -107,12 +160,12 @@ function constructor(accounts) {
 
   });
 
-}
+  }
 
 
-//################################################################
-// MATH
-function checkMath(_val) {
+  //################################################################
+  // MATH
+  function checkMath(_val) {
     it("Checks core math", async () => {
       const output = BN2Int(await instanceMAI.getCLPSwap(int2Str(_val), int2Str(etherPool.asset), int2Str(etherPool.mai)))
       const _output = _getCLPSwap(_val, +etherPool.asset, +etherPool.mai)
@@ -123,8 +176,6 @@ function checkMath(_val) {
       const liquidation = BN2Int(await instanceMAI.getCLPLiquidation(int2Str(_val), int2Str(etherPool.asset), int2Str(etherPool.mai)))
       const _liquidation = _getCLPLiquidation(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(liquidation, _liquidation, "liquidation is correct")
-      //console.log("x:%s, X:%s, Y:%s, y:%s, fee:%s, lP:%s", int2Num(+_val), int2Num(+etherPool.asset),
-      //int2Num(+etherPool.mai), int2Num(+output), int2Num(+fee), int2Num(+liquidation))
     })
   }
   
@@ -148,10 +199,6 @@ function checkMath(_val) {
       const maiPPInUSD = BN2Int(await instanceMAI.getMAIPPInUSD(int2Str(ethPPInMAI)))
       assert.equal(maiPPInUSD, getMAIPPInUSD(ethPPInMAI), "mai is correct")
   
-      // const liquidationPoint = BN2Int(await instanceMAI.checkLiquidationPoint(int2Str(ethPPInMAI)))
-      // assert.equal(liquidationPoint, 31880207704383530000,"mai is correct")
-      // console.log(liquidationPoint)
-  
     })
   }
   
@@ -163,25 +210,17 @@ function checkMath(_val) {
     var newDebt; var newCollateral; var acc0Bal;
   
     it("Allows opening CDP", async () => {
-      //CDP = (await instanceMAI.mapAddress_MemberData.call(_acc)).CDP
       const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_acc))
-      //console.log("CDP:", CDP)
       if (CDP > 0) {
         existingDebt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
         existingCollateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
       }
-      //console.log('_eth', BN2Int(_eth))
       const ethPPInMAI = BN2Int(await instanceMAI.getEtherPPinMAI(int2Str(_eth)))
-      //console.log("type", logType(ethPPInMAI)); console.log('ethPPInMAI',ethPPInMAI)
       const ethPP = BN2Int(getEtherPPinMAI(int2Str(_eth)).toFixed())
-      // console.log(logType(ethPP))
       assert.equal(ethPPInMAI, ethPP, "etherPP is correct")
-      //console.log('ethPPInMAI', ethPPInMAI, ethPP)
       const mintAmount = (ethPPInMAI * 100) / (_ratio);
-     // console.log("mintAmount", mintAmount)
       newDebt = roundBN2StrD(mintAmount)
       newCollateral = _eth
-
       acc0Bal = BN2Int(await instanceMAI.balanceOf(_acc))
   
       var tx1;
@@ -190,8 +229,7 @@ function checkMath(_val) {
       } else {
         tx1 = await instanceMAI.openCDP(_ratio, { from: _acc, value: _eth });
       }
-  
-      //console.log(tx1.receipt)
+
       assert.equal(tx1.logs.length, 3, "one event was triggered");
       assert.equal(tx1.logs[0].event, "Transfer", "Transfer was called");
       assert.equal(tx1.logs[0].args.to, addressMAI, "To is correct");
@@ -202,7 +240,6 @@ function checkMath(_val) {
       assert.equal(tx1.logs[2].event, "NewCDP", "New CDP event was called");
       assert.equal(roundBN2StrD(tx1.logs[2].args.debtIssued), newDebt, "newDebt is correct")
       assert.equal(roundBN2StrD(tx1.logs[2].args.collateralHeld), roundBN2StrD(newCollateral), "Collateral is correct");
-      //console.log(newDebt, newCollateral)
     });
   
     //test balance of account 0 for mai has increased
@@ -211,16 +248,12 @@ function checkMath(_val) {
       assert.equal(addressMAIBal, initialMAI, "correct addressMAIBal bal");
   
       let acc0Bal1 = BN2Int(await instanceMAI.balanceOf(_acc))
-      console.log(newDebt, existingDebt)
-      console.log('acc0Bal', acc0Bal1)
       assert.equal(roundBN2StrDR(acc0Bal1, 10), roundBN2StrDR((+acc0Bal + +newDebt),10), "correct _acc bal");
   
       let maiSupply = BN2Int(await instanceMAI.totalSupply())
       assert.equal(roundBN2StrD(maiSupply), roundBN2StrD((+acc0Bal + +newDebt + initialMAI)), "correct new supply")
-      //console.log(addressMAIBal, acc0Bal, maiSupply)
   
     })
-
 
     // Test mappings
     it("Tests mappings", async () => {
@@ -242,9 +275,7 @@ function checkMath(_val) {
   function testFailCDP(_eth, _ratio, _acc) {
   
     it("tests <101 collaterisation fails to open CDP", async () => {
-  
       var tx1 = await truffleAssert.reverts(instanceMAI.openCDP(_ratio, { from: _acc, value: _eth }));
-  
     });
   }
   
@@ -253,18 +284,15 @@ function checkMath(_val) {
     it("Allows adding to  CDP", async () => {
   
       let CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
-      //console.log("CDP", CDP)
       let existingDebt = BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
-      //console.log("existingDebt", existingDebt)
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
       const ethPP = getEtherPPinMAI(existingCollateral.plus(_eth))
       const cltrzn  = Math.floor((ethPP * 100) / existingDebt)
-      //open CDP
+
       let tx1 = await instanceMAI.addCollateralToCDP({ from: _acc, to: addressMAI, value: _eth });
       assert.equal(tx1.logs.length, 1, "one event was triggered");
       assert.equal(tx1.logs[0].event, "UpdateCDP", "UpdateCDP was called");
       assert.equal(tx1.logs[0].args.CDP, CDP, "CDP is correct");
-      //assert.equal(BN2Int(tx1.logs[1].args.time), issuedMai, "amount is correct");
       assert.equal(tx1.logs[0].args.owner, _acc, "owner is correct");
       assert.equal(BN2Int(tx1.logs[0].args.debtAdded), 0, "debt is correct");
       assert.equal(BN2Int(tx1.logs[0].args.collateralAdded), _eth, "collateral is correct");
@@ -280,7 +308,6 @@ function checkMath(_val) {
     var newDebt; var accBal0; var additionalMintAmount; var maiSupply0;
   
     it("Allows reminting MAI from CDP", async () => {
-  
       let CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
       let existingDebt = BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
@@ -288,16 +315,13 @@ function checkMath(_val) {
       const maxMintAmount = (purchasingPower * _ratio) / 100;
       additionalMintAmount = BN2Int(maxMintAmount - existingDebt);
       newDebt = roundBN2StrD(additionalMintAmount + existingDebt)
-      //console.log(purchasingPower, maxMintAmount, additionalMintAmount)
       accBal0 = roundBN2StrD(await instanceMAI.balanceOf(_acc))
       maiSupply0 = BN2Int(await instanceMAI.totalSupply())
 
       let tx1 = await instanceMAI.remintMAIFromCDP(_ratio, { from: _acc, to: addressMAI});
-      //console.log(tx1.logs[2])
       assert.equal(tx1.logs.length, 3, "three events were triggered");
       assert.equal(tx1.logs[2].event, "UpdateCDP", "UpdateCDP was called");
       assert.equal(tx1.logs[2].args.CDP, CDP, "CDP is correct");
-      // //assert.equal(BN2Int(tx1.logs[1].args.time), issuedMai, "amount is correct");
       assert.equal(tx1.logs[2].args.owner, _acc, "owner is correct");
       assert.equal(roundBN2StrD(tx1.logs[2].args.debtAdded), roundBN2StrD(additionalMintAmount), "mint is correct");
       assert.equal(BN2Int(tx1.logs[2].args.collateralAdded), 0, "collateral is correct");
@@ -315,8 +339,6 @@ function checkMath(_val) {
       
       let maiSupply1 = BN2Int(await instanceMAI.totalSupply())
       assert.equal(roundBN2StrD(maiSupply1), roundBN2StrD((+additionalMintAmount + maiSupply0)), "correct new supply")
-      //console.log(addressMAIBal, acc0Bal, maiSupply)
-  
     })
   }
   
@@ -326,14 +348,11 @@ function checkMath(_val) {
     var CDP; var accBal0; var maiSupply0; var balMAI0;
   
     it("Allows closing CDP", async () => {
-  
       let accEth1 = BN2Int(await web3.eth.getBalance(_acc))
       CDP = BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
-      //console.log("CDP", CDP)
       let existingDebt = BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
      
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
-      console.log("existingDebt", existingDebt)
       let debtClosed = existingDebt * (_bp / 10000)
       let collateralReturned = existingCollateral * (_bp / 10000)
   
@@ -369,7 +388,6 @@ function checkMath(_val) {
       assert.equal(accEth2, roundBN2StrDR((+accEth1 + +BN2Int(existingCollateral) - gasCost), 3), "gas test")
   
       let balMAI1 = roundBN2StrDR(await web3.eth.getBalance(addressMAI), 9)
-      //console.log(balMAI, existingDebt, existingCollateral, debtClosed, collateralReturned)
       assert.equal(balMAI1, roundBN2StrDR(+balMAI0 - +collateralReturned, 9), "Correct acount balance")
       
   
@@ -394,22 +412,17 @@ function checkMath(_val) {
       const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_acc))
       existingDebt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
       existingCollateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
-      console.log(existingDebt, existingCollateral)
       const canLiquidate = checkLiquidateCDP(existingCollateral, existingDebt)
       const canLiquidateSC = await instanceMAI.checkLiquidationPoint(CDP)
       assert.equal(canLiquidateSC, canLiquidate, "canLiquidate is correct")
-      console.log('canLiquidate', CDP, existingDebt, existingCollateral, canLiquidate)
   
       if (canLiquidateSC){
         const liquidatedCollateral = roundBN2StrD(existingCollateral / (10000 / _bp))
         const debtDeleted = roundBN2StrD(existingDebt / (10000 / _bp))
         const maiBought = roundBN2StrD((getEtherPPinMAI(liquidatedCollateral)))
         const fee = roundBN2StrD(maiBought - debtDeleted)
-        console.log(liquidatedCollateral, debtDeleted, maiBought, fee)
-  
-        console.log(CDP, _bp)
+
         let tx1 = await instanceMAI.liquidateCDP(CDP, _bp, { from: _acc });
-        // console.log(tx1.logs)
         assert.equal(tx1.logs.length, 1, "Three events were triggered");
         assert.equal(tx1.logs[0].event, "LiquidateCDP", "Correct event");
         assertLog(roundBN2StrD(tx1.logs[0].args.etherSold), liquidatedCollateral, "Correct liquidatedCollateral");
@@ -420,10 +433,7 @@ function checkMath(_val) {
         const finalDebt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
         const finalCollateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
 
-        console.log('finals', finalDebt, finalCollateral)
         let acc0Bal = BN2Int(await instanceMAI.balanceOf(_acc))
-        console.log('acc0Bal', acc0Bal)
-  
       }
     })
   
@@ -463,9 +473,7 @@ function checkMath(_val) {
   function getEtherPPinMAI(amount) {
     const etherBal = etherPool.asset
     const maiBal = etherPool.mai
-    //console.log(etherBal, maiBal)
     const outputMai = _getCLPSwap(amount, etherBal, maiBal);
-    //console.log("outputMai", outputMai)
     return outputMai;
   }
   
@@ -474,7 +482,6 @@ function checkMath(_val) {
     const maiBal = usdPool.mai
   
     const outputUSD = _getCLPSwap(amount.toString(), maiBal, usdBal);
-    //console.log(maiBal, usdBal, outputUSD)
     return outputUSD;
   }
   
@@ -497,15 +504,10 @@ function checkMath(_val) {
     const _x = new int2BN(x)
     const _X = new int2BN(X)
     const _Y = new int2BN(Y)
-    // assume BN
     const numerator = _x.times(_Y).times(_X)
     const denominator = (_x.plus(_X)).times((_x.plus(_X)))
     const _y = numerator.div(denominator)
     const y = BN2Int(_y);
-    // const numerator = x * Y * X;
-    // const denominator = (x + X) * (x + X );
-    // const y = numerator / denominator;
-    //console.log("clpswap", _x, _X, _Y, numerator, denominator, y)
     return y;
   }
   
@@ -514,15 +516,10 @@ function checkMath(_val) {
     const _x = new int2BN(x)
     const _X = new int2BN(X)
     const _Y = new int2BN(Y)
-    // assume BN
     const numerator = _x.times(_Y.times(_x));
     const denominator = (_x.plus(_X)).times(_x.plus(_X));
     const _y = numerator.div(denominator);
     const y = BN2Int(_y);
-    // const numerator = x * Y * X;
-    // const denominator = (x + X) * (x + X );
-    // const y = numerator / denominator;
-    //console.log("clpswap", _x, _X, _Y, numerator, denominator, y)
     return y;
   }
   
@@ -531,14 +528,9 @@ function checkMath(_val) {
     const _x = new int2BN(x)
     const _X = new int2BN(X)
     const _Y = new int2BN(Y)
-    // assume BN
     const numerator = _x.times(_Y.times(_X.minus(_x)));
     const denominator = (_x.plus(_X)).times(_x.plus(_X));
     const _y = numerator.div(denominator);
     const y = BN2Int(_y);
-    // const numerator = x * Y * X;
-    // const denominator = (x + X) * (x + X );
-    // const y = numerator / denominator;
-    //console.log("clpswap", _x, _X, _Y, numerator, denominator, y)
     return y;
   }
