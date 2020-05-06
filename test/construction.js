@@ -26,7 +26,7 @@ contract('MAI', function (accounts) {
     // checkMath(_dot001)
     // checkPrices(_dot001)
      openCDP(_dot001, 110, acc1) // <- gets 0.15
-    // logAccounts(acc1)
+    logAccounts(acc1)
       logPools(_1)
     // liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
     // openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3

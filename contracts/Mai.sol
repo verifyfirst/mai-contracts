@@ -45,7 +45,7 @@ library SafeMath {
 contract MAI is ERC20{
 
     using SafeMath for uint256;
-    //Token Details
+    //Asset Details
     string public name = "MAI Asset";
     string public symbol = "MAI";
     uint256 public decimals  = 18;
@@ -56,10 +56,8 @@ contract MAI is ERC20{
 
     mapping(address => uint256) public override balanceOf;
     mapping(address => mapping(address => uint256)) public override allowance;
-    mapping(uint256 => CDPData) public mapCDP_Data;
-    mapping(address => MemberData) public mapAddress_MemberData;
 
-    uint256 public countOfCDPs;
+    
     uint256 public minCollaterisation;
     uint256 public defaultCollateralisation;
     uint256 public etherPrice;
@@ -67,35 +65,42 @@ contract MAI is ERC20{
     uint256 public mintedMAI;
     uint256 public pooledMAI;
 
+    mapping(address => MemberData) mapAddress_MemberData;
+    address[] public members;
     struct MemberData {
         address[] exchanges;
         uint256 CDP;
     }
 
+    mapping(uint256 => CDPData) public mapCDP_Data;
+    uint256 public countOfCDPs;
     struct CDPData {
         uint256 collateral;
         uint256 debt;
         address payable owner;
     }
 
-    mapping(address => ExchangeData) public mapToken_ExchangeData;
+    mapping(address => ExchangeData) public mapAsset_ExchangeData;
     address[] public exchanges;
     struct ExchangeData {
-        bool listed;
+        //bool listed;
         uint256 balanceMAI;
         uint256 balanceAsset;
-        // address[] stakers;
-        // uint256 poolUnits;
-        // mapping(address => uint256) stakerUnits;
+        address[] stakers;
+        uint256 poolUnits;
+        mapping(address => uint256) stakerUnits;
     }
 
     // Events
+    event Transfer (address indexed from, address indexed to, uint256 amount);
+    event Approval ( address indexed owner, address indexed spender, uint256 amount);
+
     event NewCDP(uint256 CDP, uint256 time, address owner, uint256 debtIssued, uint256 collateralHeld, uint256 collateralisation);
     event UpdateCDP(uint256 CDP, uint256 time, address owner, uint256 debtAdded, uint256 collateralAdded, uint256 collateralisation);
     event CloseCDP(uint256 CDP, uint256 time, address owner, uint256 debtPaid, uint256 etherReturned);
     event LiquidateCDP(uint256 CDP, uint256 time, address liquidator, uint256 liquidation, uint256 etherSold, uint256 maiBought, uint256 debtDeleted, uint256 feeClaimed);
-    event Transfer (address indexed from, address indexed to, uint256 amount);
-    event Approval ( address indexed owner, address indexed spender, uint256 amount);
+    event AddLiquidity(address asset, address liquidityProvider, uint256 amountMAI, uint256 amountAsset, uint256 unitsIssued);
+    event RemoveLiquidity(address asset, address liquidityProvider, uint256 amountMAI, uint256 amountAsset, uint256 unitsClaimed);
 
     event Testing1 (uint256 val1);
     event Testing2 (uint256 val1, uint256 val2);
@@ -161,8 +166,8 @@ contract MAI is ERC20{
         uint256 genesisPrice = 200;
         uint256 purchasingPower = (msg.value/3) * genesisPrice; 
          _mint(purchasingPower*2);
-        mapToken_ExchangeData[address(0)].balanceAsset = msg.value/3;  
-        mapToken_ExchangeData[address(0)].balanceMAI = purchasingPower;
+        mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
+        mapAsset_ExchangeData[address(0)].balanceMAI = purchasingPower;
         uint256 mintAmount = (purchasingPower.mul(100)).div(defaultCollateralisation);
         uint256 CDP = 0; countOfCDPs = 0;
         mapAddress_MemberData[address(0)].CDP = CDP;
@@ -170,7 +175,7 @@ contract MAI is ERC20{
         mapCDP_Data[CDP].debt = mintAmount;
         mapCDP_Data[CDP].owner = address(0);
 
-        mapToken_ExchangeData[address(0)].listed = true;
+        mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
 
         _transfer(address(this), msg.sender, purchasingPower);
@@ -178,15 +183,15 @@ contract MAI is ERC20{
       
     }
 
-    function addExchange(address token, uint256 amountAsset, uint256 amountMAI) public returns (bool success){
+    function addExchange(address asset, uint256 amountAsset, uint256 amountMAI) public returns (bool success){
         require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
-        ERC20(token).transferFrom(msg.sender, address(this), amountAsset);
+        ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
 
         // USD pool
-        mapToken_ExchangeData[token].balanceMAI = amountMAI;
-        mapToken_ExchangeData[token].balanceAsset = amountAsset;
-        mapToken_ExchangeData[token].listed = true;
-        exchanges.push(token);
+        mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
+        mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+        mapAsset_ExchangeData[asset].listed = true;
+        exchanges.push(asset);
         return true;
     }
 
@@ -295,15 +300,100 @@ contract MAI is ERC20{
         }
     }
 
-   function getValueInMAI(address token) public view returns (uint256 price){
-       uint256 balAsset = mapToken_ExchangeData[token].balanceAsset;
-       uint256 balMAI = mapToken_ExchangeData[token].balanceMAI;
+    //==================================================================================//
+    // Liquidity functions
+
+    function addLiquidityToEtherPool (uint256 amountMAI) public payable returns (bool success) {
+        require(msg.value > 0, "Must get Ether");
+        require(transferFrom(msg.sender, address(this), amountMAI), "Must collect MAI");
+        _addLiquidity(address(0), msg.value, amountMAI);
+        return true;
+    }
+
+    function addLiquidityToAssetPool (address asset, uint256 amountAsset, uint256 amountMAI) public returns (bool success) {
+        ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);  
+        require(transferFrom(msg.sender, address(this), amountMAI), "Must collect MAI");
+        _addLiquidity(asset, amountAsset, amountMAI);
+        return true;
+    }
+
+    function _addLiquidity(address asset, uint256 amountAsset, uint256 amountMAI) internal {
+        if (mapAsset_ExchangeData[asset] == 0) {                                                         
+            exchanges.push(asset);                                                // Add new exchange
+            //mapAsset_ExchangeData[asset].listed = true;
+            mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
+            mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+        } else {
+            mapAsset_ExchangeData[asset].balanceMAI += amountMAI;
+            mapAsset_ExchangeData[asset].balanceAsset += amountAsset;
+        }
+        if (mapAsset_ExchangeData[asset].stakerUnits[msg.sender] == 0) {
+            mapAsset_ExchangeData[asset].stakers.push(msg.sender);
+            mapAddress_MemberData[msg.sender].exchanges.push(asset);
+            members.push(msg.sender);
+        }
+        uint256 M = mapAsset_ExchangeData[asset].balanceMAI;
+        uint256 A = mapAsset_ExchangeData[asset].balanceAsset;
+        // ((M + A) * (m * A + M * a))/(4 * M * A)
+        uint256 numerator1 = M.add(A);
+        uint256 numerator2 = amountMAI.mul(A);
+        uint256 numerator3 = M.mul(amountAsset);
+        uint256 numerator = numerator1.mul((numerator2.add(numerator3)));
+        uint256 denominator = 4 * (M.mul(A));
+        uint256 units = numerator.div(denominator);
+        mapAsset_ExchangeData[asset].poolUnits += units;
+        mapAsset_ExchangeData[asset].stakerUnits[msg.sender] += units;
+        emit AddLiquidity(asset, msg.sender, amountMAI, amountAsset, units);
+    }
+
+    // function removeLiquidityFromEtherPool() public returns (bool success) {
+    //     require(removeLiquidityPool(address(0)));
+    //     return true;
+    // }
+
+    function removeLiquidityPool(address asset, uint256 bp) public returns (bool success) {
+        uint256 _outputMAI; uint256 _outputAsset;
+        (_outputMAI, _outputAsset) = _removeLiquidity(asset, bp);
+        if(asset == address(0)){
+            msg.sender.transfer(_outputAsset);
+        } else {
+            ERC20(asset).transfer(msg.sender, _outputAsset);
+        }
+        require (transfer(msg.sender, _outputMAI));
+        return true;
+    }
+
+
+
+    function _removeLiquidity(address _asset, uint256 _bp) internal returns (uint256 _outputMAI, uint256 _outputAsset) {
+        require(mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] > 0);
+        require(_bp <= 10000); require(_bp > 0);
+        uint256 _basisPoints = 10000;
+        uint256 _stakerUnits = mapAsset_ExchangeData[_asset].stakerUnits[msg.sender];
+        uint256 _units = (_stakerUnits * _bp)/_basisPoints;
+        uint256 _total = mapAsset_ExchangeData[_asset].poolUnits;
+        uint256 _balanceMAI = mapAsset_ExchangeData[_asset].balanceMAI;
+        uint256 _balanceAsset = mapAsset_ExchangeData[_asset].balanceAsset;
+        _outputMAI = (_balanceMAI.mul(_units)).div(_total);
+        _outputAsset = (_balanceAsset.mul(_units)).div(_total);
+        mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] = 0;
+        mapAsset_ExchangeData[_asset].poolUnits -= _units;
+        emit RemoveLiquidity(_asset, msg.sender, _outputMAI, _outputAsset, _units);
+        return(_outputMAI, _outputAsset);
+    }
+
+    //==================================================================================//
+    // Pricing functions
+
+   function getValueInMAI(address asset) public view returns (uint256 price){
+       uint256 balAsset = mapAsset_ExchangeData[asset].balanceAsset;
+       uint256 balMAI = mapAsset_ExchangeData[asset].balanceMAI;
        return (_1.mul(balMAI)).div(balAsset);
    }
 
-    function getValueInAsset(address token) public view returns (uint256 price){
-       uint256 balAsset = mapToken_ExchangeData[token].balanceAsset;
-       uint256 balMAI = mapToken_ExchangeData[token].balanceMAI;
+    function getValueInAsset(address asset) public view returns (uint256 price){
+       uint256 balAsset = mapAsset_ExchangeData[asset].balanceAsset;
+       uint256 balMAI = mapAsset_ExchangeData[asset].balanceMAI;
        return (_1.mul(balAsset)).div(balMAI);
    }
 
@@ -316,8 +406,8 @@ contract MAI is ERC20{
    }
 
    function getEtherPPinMAI(uint256 amount) public view returns (uint256 amountBought){
-        uint256 etherBal = mapToken_ExchangeData[address(0)].balanceAsset;
-        uint256 balMAI = mapToken_ExchangeData[address(0)].balanceMAI;
+        uint256 etherBal = mapAsset_ExchangeData[address(0)].balanceAsset;
+        uint256 balMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
 
         uint256 outputMAI = getCLPSwap(amount, etherBal, balMAI);
        // uint256 outputUSD = getMAIPPInUSD(outputMAI);
@@ -325,8 +415,8 @@ contract MAI is ERC20{
    }
 
       function getMAIPPInUSD(uint256 amount) public view returns (uint256 amountBought){
-        uint256 balMAI = mapToken_ExchangeData[exchangeUSD].balanceMAI;
-        uint256 balanceUSD = mapToken_ExchangeData[exchangeUSD].balanceAsset;
+        uint256 balMAI = mapAsset_ExchangeData[exchangeUSD].balanceMAI;
+        uint256 balanceUSD = mapAsset_ExchangeData[exchangeUSD].balanceAsset;
 
         uint256 outputUSD = getCLPSwap(amount, balMAI, balanceUSD);
         return outputUSD;
@@ -335,8 +425,8 @@ contract MAI is ERC20{
    function checkLiquidationPoint(uint256 CDP) public view returns (bool canLiquidate){
         uint256 collateral = mapCDP_Data[CDP].collateral;
         uint256 debt = mapCDP_Data[CDP].debt;
-        uint256 etherBal = mapToken_ExchangeData[address(0)].balanceAsset;
-        uint256 balMAI = mapToken_ExchangeData[address(0)].balanceMAI;
+        uint256 etherBal = mapAsset_ExchangeData[address(0)].balanceAsset;
+        uint256 balMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
         uint256 outputMAI = getCLPLiquidation(collateral, etherBal, balMAI);
         if(outputMAI < debt) {
             canLiquidate = true;
