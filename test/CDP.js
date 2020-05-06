@@ -1,8 +1,8 @@
 var MAI = artifacts.require("./MAI.sol");
 var USD = artifacts.require("./tokenUSD.sol");
 
-const Math = require('./core-math.js')
-
+const tools = require('./core-math.js')
+const help = require('./helper.js');
 const assert = require("chai").assert;
 const truffleAssert = require('truffle-assertions');
 var BigNumber = require('bignumber.js');
@@ -25,12 +25,12 @@ const initialMAI = 4 * _1; const initialETH = 3*10**16;
 contract('MAI', function (accounts) {
 
     constructor(accounts)
-    // checkMath(_dot001)
-    // checkPrices(_dot001)
-     openCDP(_dot001, 110, acc1) // <- gets 0.15
-    logAccounts(acc1)
-      logPools(_1)
-    // liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
+      checkMath(_dot001)
+    //  checkPrices(_dot001)
+    // openCDP(_dot001, 110, acc1) // <- gets 0.15
+    // logAccounts(acc1)
+    // logPools(_1)
+    //  liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
     // openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
     // openCDP(_dot001, 110, acc1)
     // testFailCDP(_dot001, 100, acc1)
@@ -40,95 +40,6 @@ contract('MAI', function (accounts) {
     // remintMAIFromCDP(101, acc1)
     // closeCDP(acc1, 10000)
   })
-
-//################################################################
-// HELPERS
-function BN2Int(BN) { return +(new BigNumber(BN)).toFixed() }
-function BN2Str(BN) { return (new BigNumber(BN)).toFixed() }
-function int2BN(int) { return (new BigNumber(int)) }
-function int2Str(int) { return ((int).toString()) }
-function int2Num(int) { return (int / (1 * 10 ** 18)) }
-function roundBN2StrD(BN) {
-  const BN_ = (new BigNumber(BN)).toPrecision(11, 1)
-  return BN2Str(BN_)
-}
-function roundBN2StrDR(BN, x) {
-  const BN_ = (new BigNumber(BN)).toPrecision(x, 1)
-  return BN2Str(BN_)
-}
-function assertLog(number1, number2, test) {
-  console.log(BN2Int(number1), BN2Int(number2), test)
-}
-function logType(thing) {
-  console.log("%s type", thing, typeof thing)
-}
-
-function logPools(_eth) {
-  it("Logs all states", async () => {
-// log balances of etherPool.asset, etherPool.mai, price(_1), PP(_1)
-const etherPoolETHBalance = BN2Int(etherPool.asset);
-const etherPoolMAIBalance = BN2Int(etherPool.mai);
-const ethValueInMai = BN2Int(await instanceMAI.getValueInMAI(addressETH))
-const ethPriceInUSD = BN2Int(await instanceMAI.getEtherPriceInUSD(int2Str(_eth)))
-const ethPPInMAI = BN2Int(await instanceMAI.getEtherPPinMAI(int2Str(_eth)))
-console.log(" ")
-console.log("-------------------etherPool DETAILS--------------------")
-console.log('ETH Balance of etherPool: ', etherPoolETHBalance/(_1))
-console.log('MAI Balance of etherPool: ', etherPoolMAIBalance/(_1))
-console.log('MAI Price from etherPool: ', ethValueInMai/(_1))
-console.log('USD Price from etherPool: ', ethPriceInUSD/(_1))
-console.log('MAI PuPow from etherPool: ', ethPPInMAI/(_1))
-
-// log balances of usdPool.asset, etherPool.mai, price(_1), PP(_1)
-const usdPoolETHBalance = BN2Int(usdPool.asset);
-const usdPoolMAIBalance = BN2Int(usdPool.mai);
-const usdValueInMai = BN2Int(await instanceMAI.getValueInMAI(addressUSD))
-const maiPPInUSD = BN2Int(await instanceMAI.getMAIPPInUSD(int2Str(_eth)))
-console.log(" ")
-console.log("---------------------usdPool DETAILS--------------------")
-console.log('ETH Balance of usdPool:   ', usdPoolETHBalance/(_1))
-console.log('MAI Balance of usdPool:   ', usdPoolMAIBalance/(_1))
-console.log('MAI Price from usdPool:   ', usdValueInMai/(_1))
-console.log('MAI PuPow from usdPool:   ', maiPPInUSD/(_1))
-})
-}
-
- function logAccounts(_accCDP) {
-  it("Logs all states", async () => {
-
-  // log balanceETH of addressMAI, acc0, acc1
-  const acc0ETHbalance = await web3.eth.getBalance(acc0)
-  const acc1ETHbalance = await web3.eth.getBalance(acc1)
-  const addressETHbalance = await web3.eth.getBalance(addressETH)
-  console.log(" ")
-  console.log("----------------------ETH BALANCES---------------------")
-  console.log('acc0:       ', acc0ETHbalance/(_1))
-  console.log('acc1:       ', acc1ETHbalance/(_1))
-  console.log('addressETH: ', addressETHbalance/(_1))
-
-  // log balanceMAI of addressMAI, acc0, acc1
-  const acc0MAIBalance = BN2Int(await instanceMAI.balanceOf(acc0))
-  const acc1MAIBalance = BN2Int(await instanceMAI.balanceOf(acc1))
-  const addressMAIBalance = BN2Int(await instanceMAI.balanceOf(addressMAI))
-  console.log(" ")
-  console.log("-----------------------MAI BALANCES--------------------")
-  console.log('acc0:       ', acc0MAIBalance/(_1))  
-  console.log('acc1:       ', acc1MAIBalance/(_1))  
-  console.log('addressMAI: ', addressMAIBalance/(_1))  
-
-  // log CDP of accCDP: collateral, debt
-  const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_accCDP))
-  const Collateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
-  const Debt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
-  console.log(" ")
-  console.log("-----------------------CDP DETAILS----------------------")
-  console.log('CDP:        ', CDP)
-  console.log('Collateral: ', Collateral/(_1)) 
-  console.log('Debt:       ', Debt/(_1)) 
-
-  
-})
-}
 
   //################################################################
   // CONSTRUCTION
@@ -144,22 +55,22 @@ console.log('MAI PuPow from usdPool:   ', maiPPInUSD/(_1))
     instanceMAI = await MAI.new(addressUSD, {value:initialETH});
     addressMAI = instanceMAI.address;
     
-    const supply = BN2Int(await instanceMAI.totalSupply())
+    const supply = help.BN2Int(await instanceMAI.totalSupply())
     assert.equal(supply, 4*_1, "supply is correct")
-    const etherPool_asset = BN2Int((await instanceMAI.mapToken_ExchangeData(addressETH)).balanceAsset);
+    const etherPool_asset = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
     assert.equal(etherPool_asset, etherPool.asset)
-    const etherPool_mai = BN2Int((await instanceMAI.mapToken_ExchangeData(addressETH)).balanceMAI);
+    const etherPool_mai = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
     assert.equal(etherPool_mai, etherPool.mai)
 
     await instanceMAI.approve(addressMAI, (usdPool.mai), {from:acc0})
     await instanceUSD.approve(addressMAI, (usdPool.asset), {from:acc0})
     await instanceMAI.addExchange(addressUSD, (usdPool.asset), (usdPool.mai), {from:acc0})
 
-    const usdPool_asset = BN2Str((await instanceMAI.mapToken_ExchangeData(addressUSD)).balanceAsset);
-    assert.equal(usdPool_asset, BN2Str(usdPool.asset))
-    const usdPool_mai = BN2Str((await instanceMAI.mapToken_ExchangeData(addressUSD)).balanceMAI);
-    assert.equal(usdPool_mai, BN2Str(usdPool.mai))
-
+    const usdPool_asset = help.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressUSD)).balanceAsset);
+    assert.equal(usdPool_asset, help.BN2Str(usdPool.asset))
+    const usdPool_mai = help.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressUSD)).balanceMAI);
+    assert.equal(usdPool_mai, help.BN2Str(usdPool.mai))
+    console.log(await help.logAccounts(acc1))
   });
 
   }
@@ -169,14 +80,14 @@ console.log('MAI PuPow from usdPool:   ', maiPPInUSD/(_1))
   // MATH
   function checkMath(_val) {
     it("Checks core math", async () => {
-      const output = BN2Int(await instanceMAI.getCLPSwap(int2Str(_val), int2Str(etherPool.asset), int2Str(etherPool.mai)))
-      const _output = _getCLPSwap(_val, +etherPool.asset, +etherPool.mai)
+      const output = help.BN2Int(await instanceMAI.getCLPSwap(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
+      const _output = await tools._getCLPSwap(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(output, _output, "swap is correct")
-      const fee = BN2Int(await instanceMAI.getCLPFee(int2Str(_val), int2Str(etherPool.asset), int2Str(etherPool.mai)))
-      const _fee = _getCLPFee(_val, +etherPool.asset, +etherPool.mai)
+      const fee = help.BN2Int(await instanceMAI.getCLPFee(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
+      const _fee = await tools._getCLPFee(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(fee, _fee, "fee is correct")
-      const liquidation = BN2Int(await instanceMAI.getCLPLiquidation(int2Str(_val), int2Str(etherPool.asset), int2Str(etherPool.mai)))
-      const _liquidation = _getCLPLiquidation(_val, +etherPool.asset, +etherPool.mai)
+      const liquidation = help.BN2Int(await instanceMAI.getCLPLiquidation(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
+      const _liquidation = await tools._getCLPLiquidation(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(liquidation, _liquidation, "liquidation is correct")
     })
   }
@@ -441,98 +352,4 @@ console.log('MAI PuPow from usdPool:   ', maiPPInUSD/(_1))
   
   }
   
-  //################################################################
-  // CORE ARITHMETIC
-  
-  function getValueInMai(token) {
-    var result
-    if (token == addressETH) {
-      const etherBal = new BigNumber(etherPool.asset)
-      const maiBal = new BigNumber(etherPool.mai)
-      result = (_1BN.times(maiBal)).div(etherBal)
-    } else {
-      const usdBal = new BigNumber(usdPool.asset)
-      const maiBal = new BigNumber(usdPool.mai)
-      result = (_1BN.times(maiBal)).div(usdBal)
-    }
-    return result.toFixed()
-  }
-  
-  function getValueInAsset(token) {
-    const usdBal = usdPool.asset
-    const maiBal = usdPool.mai
-    return ((_1BN.times(usdBal)).div(maiBal)).toFixed()
-  }
-  
-  function getEtherPriceInUSD(amount) {
-    const _amount = new BigNumber(amount)
-    const etherPriceInMai = new BigNumber(getValueInMai(addressETH))
-    const maiPriceInUSD = new BigNumber(getValueInAsset(addressUSD))
-    const ethPriceInUSD = (maiPriceInUSD.times(etherPriceInMai)).div(_1BN)
-    return ((_amount.times(ethPriceInUSD)).div(_1BN)).toFixed()
-  }
-  
-  function getEtherPPinMAI(amount) {
-    const etherBal = etherPool.asset
-    const maiBal = etherPool.mai
-    const outputMai = _getCLPSwap(amount, etherBal, maiBal);
-    return outputMai;
-  }
-  
-  function getMAIPPInUSD(amount) {
-    const usdBal = usdPool.asset
-    const maiBal = usdPool.mai
-  
-    const outputUSD = _getCLPSwap(amount.toString(), maiBal, usdBal);
-    return outputUSD;
-  }
-  
-  function checkLiquidateCDP(_collateral, _debt){
-    const etherBal = etherPool.asset
-    const maiBal = etherPool.mai
-    const outputMai = _getCLPLiquidation(_collateral, etherBal, maiBal);
-    //console.log("details", outputMai, _debt)
-    var canLiquidate
-    if(outputMai < _debt) {
-        canLiquidate = true;
-    } else {
-        canLiquidate = false;
-    }
-    return canLiquidate;
-  }
-  
-  function _getCLPSwap(x, X, Y) {
-    // y = (x * Y * X)/(x + X)^2
-    const _x = new int2BN(x)
-    const _X = new int2BN(X)
-    const _Y = new int2BN(Y)
-    const numerator = _x.times(_Y).times(_X)
-    const denominator = (_x.plus(_X)).times((_x.plus(_X)))
-    const _y = numerator.div(denominator)
-    const y = BN2Int(_y);
-    return y;
-  }
-  
-  function _getCLPFee(x, X, Y) {
-    // y = (x * Y * x) / (x + X)^2
-    const _x = new int2BN(x)
-    const _X = new int2BN(X)
-    const _Y = new int2BN(Y)
-    const numerator = _x.times(_Y.times(_x));
-    const denominator = (_x.plus(_X)).times(_x.plus(_X));
-    const _y = numerator.div(denominator);
-    const y = BN2Int(_y);
-    return y;
-  }
-  
-  function _getCLPLiquidation(x, X, Y) {
-    // y = (x * Y * (X - x))/(x + X)^2
-    const _x = new int2BN(x)
-    const _X = new int2BN(X)
-    const _Y = new int2BN(Y)
-    const numerator = _x.times(_Y.times(_X.minus(_x)));
-    const denominator = (_x.plus(_X)).times(_x.plus(_X));
-    const _y = numerator.div(denominator);
-    const y = BN2Int(_y);
-    return y;
-  }
+ 

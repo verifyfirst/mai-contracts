@@ -65,7 +65,7 @@ contract MAI is ERC20{
     uint256 public mintedMAI;
     uint256 public pooledMAI;
 
-    mapping(address => MemberData) mapAddress_MemberData;
+    mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
         address[] exchanges;
@@ -175,7 +175,7 @@ contract MAI is ERC20{
         mapCDP_Data[CDP].debt = mintAmount;
         mapCDP_Data[CDP].owner = address(0);
 
-        mapAsset_ExchangeData[address(0)].listed = true;
+        //mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
 
         _transfer(address(this), msg.sender, purchasingPower);
@@ -190,7 +190,7 @@ contract MAI is ERC20{
         // USD pool
         mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
-        mapAsset_ExchangeData[asset].listed = true;
+        //mapAsset_ExchangeData[asset].listed = true;
         exchanges.push(asset);
         return true;
     }
@@ -318,32 +318,32 @@ contract MAI is ERC20{
     }
 
     function _addLiquidity(address asset, uint256 amountAsset, uint256 amountMAI) internal {
-        if (mapAsset_ExchangeData[asset] == 0) {                                                         
-            exchanges.push(asset);                                                // Add new exchange
-            //mapAsset_ExchangeData[asset].listed = true;
-            mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
-            mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
-        } else {
-            mapAsset_ExchangeData[asset].balanceMAI += amountMAI;
-            mapAsset_ExchangeData[asset].balanceAsset += amountAsset;
-        }
-        if (mapAsset_ExchangeData[asset].stakerUnits[msg.sender] == 0) {
-            mapAsset_ExchangeData[asset].stakers.push(msg.sender);
-            mapAddress_MemberData[msg.sender].exchanges.push(asset);
-            members.push(msg.sender);
-        }
-        uint256 M = mapAsset_ExchangeData[asset].balanceMAI;
-        uint256 A = mapAsset_ExchangeData[asset].balanceAsset;
-        // ((M + A) * (m * A + M * a))/(4 * M * A)
-        uint256 numerator1 = M.add(A);
-        uint256 numerator2 = amountMAI.mul(A);
-        uint256 numerator3 = M.mul(amountAsset);
-        uint256 numerator = numerator1.mul((numerator2.add(numerator3)));
-        uint256 denominator = 4 * (M.mul(A));
-        uint256 units = numerator.div(denominator);
-        mapAsset_ExchangeData[asset].poolUnits += units;
-        mapAsset_ExchangeData[asset].stakerUnits[msg.sender] += units;
-        emit AddLiquidity(asset, msg.sender, amountMAI, amountAsset, units);
+        // if (mapAsset_ExchangeData[asset] == 0) {                                                         
+        //     exchanges.push(asset);                                                // Add new exchange
+        //     //mapAsset_ExchangeData[asset].listed = true;
+        //     mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
+        //     mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+        // } else {
+        //     mapAsset_ExchangeData[asset].balanceMAI += amountMAI;
+        //     mapAsset_ExchangeData[asset].balanceAsset += amountAsset;
+        // }
+        // if (mapAsset_ExchangeData[asset].stakerUnits[msg.sender] == 0) {
+        //     mapAsset_ExchangeData[asset].stakers.push(msg.sender);
+        //     mapAddress_MemberData[msg.sender].exchanges.push(asset);
+        //     members.push(msg.sender);
+        // }
+        // uint256 M = mapAsset_ExchangeData[asset].balanceMAI;
+        // uint256 A = mapAsset_ExchangeData[asset].balanceAsset;
+        // // ((M + A) * (m * A + M * a))/(4 * M * A)
+        // uint256 numerator1 = M.add(A);
+        // uint256 numerator2 = amountMAI.mul(A);
+        // uint256 numerator3 = M.mul(amountAsset);
+        // uint256 numerator = numerator1.mul((numerator2.add(numerator3)));
+        // uint256 denominator = 4 * (M.mul(A));
+        // uint256 units = numerator.div(denominator);
+        // mapAsset_ExchangeData[asset].poolUnits += units;
+        // mapAsset_ExchangeData[asset].stakerUnits[msg.sender] += units;
+        // emit AddLiquidity(asset, msg.sender, amountMAI, amountAsset, units);
     }
 
     // function removeLiquidityFromEtherPool() public returns (bool success) {
