@@ -70,7 +70,7 @@ contract('MAI', function (accounts) {
     assert.equal(usdPool_asset, help.BN2Str(usdPool.asset))
     const usdPool_mai = help.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressUSD)).balanceMAI);
     assert.equal(usdPool_mai, help.BN2Str(usdPool.mai))
-    console.log(await help.logAccounts(acc1))
+  
   });
 
   }

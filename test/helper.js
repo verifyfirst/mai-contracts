@@ -1,6 +1,3 @@
-var MAI = artifacts.require("./MAI.sol");
-var USD = artifacts.require("./tokenUSD.sol");
-
 const tools = require('./core-math.js');
 var BigNumber = require('bignumber.js');
 
@@ -8,15 +5,12 @@ var instanceMAI; var addressMAI; var instanceUSD; var addressUSD;
 var acc0; var acc1; var acc2; var acc3;
 
 var _1 = 1 * 10 ** 18; // 1 ETH
-const _1BN = new BigNumber(1 * 10 ** 18)
 var _dot01 = new BigNumber(1 * 10 ** 16)
-var _dot001 = new BigNumber(1 * 10 ** 15)
-var _dot2 = new BigNumber(2 * 10 ** 17)
 const addressETH = "0x0000000000000000000000000000000000000000"
 var addressUSD;
 const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
 const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
-const initialMAI = 4 * _1; const initialETH = 3*10**16;
+const initialETH = 3*10**16;
 
 //################################################################
 // HELPERS
