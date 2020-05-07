@@ -24,18 +24,18 @@ const initialMAI = 4 * _1; const initialETH = 3*10**16;
 
 contract('MAI', function (accounts) {
     constructor(accounts)
-    // checkMath(_dot001)
-    // checkPrices(_dot001)
+    checkMath(_dot001)
+    checkPrices(_dot001)
     openCDP(_dot001, 110, acc1) // <- gets 0.15
-    // addCollateralToCDP(_dot001, acc1)
-    // remintMAIFromCDP(101, acc1)
+    addCollateralToCDP(_dot001, acc1)
+    remintMAIFromCDP(101, acc1)
     liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
-    // openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
-    // openCDP(_dot001, 110, acc1)
-    // testFailCDP(_dot001, 100, acc1)
-    // closeCDP(acc1, 5000)
-    // openCDP(_dot001, 150, acc1)
-    // closeCDP(acc1, 10000)
+    openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
+    openCDP(_dot001, 110, acc1)
+    testFailCDP(_dot001, 100, acc1)
+    closeCDP(acc1, 5000)
+    openCDP(_dot001, 150, acc1)
+    closeCDP(acc1, 10000)
   })
 
   //################################################################
@@ -331,11 +331,11 @@ contract('MAI', function (accounts) {
         const fee = maiBought - debtDeleted
 
         let tx1 = await instanceMAI.liquidateCDP(CDP, _bp, { from: _acc });
-        assert.equal(tx1.logs.length, 2, "Three events were triggered");
+        assert.equal(tx1.logs.length, 1, "Three events were triggered");
         assert.equal(tx1.logs[0].event, "LiquidateCDP", "Correct event");
         assert.equal(help.roundBN2StrDR(tx1.logs[0].args.etherSold/(_1), 4), help.roundBN2StrDR(liquidatedCollateral/(_1), 4), "Correct liquidatedCollateral");
         assert.equal(help.roundBN2StrDR(tx1.logs[0].args.maiBought/(_1), 3), help.roundBN2StrDR(maiBought/(_1), 3), "Correct maiBought");
-        assert.equal(help.roundBN2StrDR(tx1.logs[0].args.debtDeleted/(_1), 4), help.roundBN2StrDR(debtDeleted/(_1), 4), "Correct debtDeleted");
+        assert.equal(help.roundBN2StrDR(tx1.logs[0].args.debtDeleted/(_1), 3), help.roundBN2StrDR(debtDeleted/(_1), 3), "Correct debtDeleted");
         assert.equal(help.roundBN2StrDR(tx1.logs[0].args.feeClaimed/(_1), 4), help.roundBN2StrDR(fee/(_1), 4), "Correct fee");
 
       const finalDebt = help.BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
