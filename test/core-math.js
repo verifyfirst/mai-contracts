@@ -107,10 +107,10 @@ const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
   
 
 module.exports = {
-  getMai: function(token) {
+  getValueInMai: function(token) {
       return getValueInMai(token)
   },
-  getAssetValue: function(token) {
+  getValueInAsset: function(token) {
     return getValueInAsset(token)
 },
 getEtherPriceInUSD: function(amount) {
