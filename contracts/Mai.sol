@@ -43,9 +43,7 @@ library SafeMath {
   }
 }
 contract MAI is ERC20{
-
     using SafeMath for uint256;
-    //Asset Details
     string public name = "MAI Asset";
     string public symbol = "MAI";
     uint256 public decimals  = 18;
@@ -83,7 +81,7 @@ contract MAI is ERC20{
     mapping(address => ExchangeData) public mapAsset_ExchangeData;
     address[] public exchanges;
     struct ExchangeData {
-        //bool listed;
+        bool listed;
         uint256 balanceMAI;
         uint256 balanceAsset;
         address[] stakers;
@@ -157,7 +155,6 @@ contract MAI is ERC20{
         defaultCollateralisation = 150;
         minCollaterisation = 101;
         exchangeUSD = assetUSD;
-
         // Construct with 3 Eth 
         // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
         // 1 Eth + 200 MAI in address(0) pool
@@ -183,14 +180,12 @@ contract MAI is ERC20{
       
     }
 
-    function addExchange(address asset, uint256 amountAsset, uint256 amountMAI) public returns (bool success){
+    function addExchange(address asset, uint256 amountAsset, uint256 amountMAI) public payable returns (bool success){
         require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
         ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
-
-        // USD pool
         mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
-        //mapAsset_ExchangeData[asset].listed = true;
+        mapAsset_ExchangeData[asset].listed = true;
         exchanges.push(asset);
         return true;
     }
@@ -408,7 +403,6 @@ contract MAI is ERC20{
    function getEtherPPinMAI(uint256 amount) public view returns (uint256 amountBought){
         uint256 etherBal = mapAsset_ExchangeData[address(0)].balanceAsset;
         uint256 balMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
-
         uint256 outputMAI = getCLPSwap(amount, etherBal, balMAI);
        // uint256 outputUSD = getMAIPPInUSD(outputMAI);
         return outputMAI;

@@ -1,17 +1,32 @@
+const MAI = artifacts.require("MAI.sol");
 const tools = require('./core-math.js');
 var BigNumber = require('bignumber.js');
-
-var instanceMAI; var addressMAI; var instanceUSD; var addressUSD;
-var acc0; var acc1; var acc2; var acc3;
-
 var _1 = 1 * 10 ** 18; // 1 ETH
-var _dot01 = new BigNumber(1 * 10 ** 16)
-const addressETH = "0x0000000000000000000000000000000000000000"
-var addressUSD;
-const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
-const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
-const initialETH = 3*10**16;
+const initialETH = 4*10**16;
 
+contract('MAI', function (accounts) {
+  constructor(accounts)
+  //addExchange(addressToken1);
+
+})
+
+//################################################################
+  // CONSTRUCTION
+  function constructor(accounts) {
+    acc0 = accounts[0]; acc1 = accounts[1]; acc2 = accounts[2]; acc3 = accounts[3]
+  
+    it("constructor events", async () => {
+      let USD = artifacts.require("tokenUSD.sol");
+      instanceUSD = await USD.new();
+      addressUSD = instanceUSD.address;
+
+      let MAI = artifacts.require("MAI.sol");
+      instanceMAI = await MAI.new(addressUSD, {value:initialETH});
+      addressMAI = instanceMAI.address;   
+    
+    });
+  
+    }
 //################################################################
 // HELPERS
 
@@ -36,90 +51,55 @@ function roundBN2StrDR(BN, x) {
 }
 
 function assertLog(number1, number2, test) {
-  console.log(+(new BigNumber(number1)).toFixed(), +(new BigNumber(number2)).toFixed(), test)
+  return console.log(+(new BigNumber(number1)).toFixed(), +(new BigNumber(number2)).toFixed(), test)
 }
 
 function logType(thing) {
-  console.log("%s type", thing, typeof thing)
+  return console.log("%s type", thing, typeof thing)
 }
 
-contract('MAI', function (accounts) {
-
-  constructor(accounts)
-
-})
-
-//################################################################
-  // CONSTRUCTION
-  function constructor(accounts) {
-    acc0 = accounts[0]; acc1 = accounts[1]; acc2 = accounts[2]; acc3 = accounts[3]
-  
-    it("constructor events", async () => {
-      let USD = artifacts.require("tokenUSD.sol");
-      instanceUSD = await USD.new();
-      addressUSD = instanceUSD.address;
-      let MAI = artifacts.require("MAI.sol");
-      instanceMAI = await MAI.new(addressUSD, {value:initialETH});
-      addressMAI = instanceMAI.address;
-      await instanceMAI.approve(addressMAI, (usdPool.mai), {from:acc0})
-      await instanceUSD.approve(addressMAI, (usdPool.asset), {from:acc0})
-      await instanceMAI.addExchange(addressUSD, (usdPool.asset), (usdPool.mai), {from:acc0})
-    });
-    }
-
-    function logPools(_eth) {
-      // log balances of etherPool.asset, etherPool.mai, price(_1), PP(_1)
-      const etherPoolETHBalance = +(new BigNumber(etherPool.asset)).toFixed();
-      const etherPoolMAIBalance = +(new BigNumber(etherPool.mai)).toFixed();
-      const ethValueInMai =  +(new BigNumber( tools.getValueInMai(addressETH))).toFixed(); 
-      const ethPriceInUSD =  +(new BigNumber( tools.getEtherPriceInUSD(int2Str(_eth)))).toFixed();
-      const ethPPInMAI =  +(new BigNumber( tools.getEtherPPinMAI(int2Str(_eth)))).toFixed();
+    async function logPool(addressAsset, amount) {
+      const assetBalance = BN2Str((await instanceMAI.mapAsset_ExchangeData(addressAsset)).balanceAsset);;
+      const assetMAIBalance = BN2Str((await instanceMAI.mapAsset_ExchangeData(addressAsset)).balanceMAI);;
+      const ValueInMai =  +(new BigNumber( tools.getValueInMai(addressAsset))).toFixed(); 
+      const PriceInUSD =  +(new BigNumber( tools.getEtherPriceInUSD(int2Str(amount)))).toFixed();
+      const PPInMAI =  +(new BigNumber( tools.getEtherPPinMAI(int2Str(amount)))).toFixed();
       console.log(" ")
-      console.log("-------------------etherPool DETAILS--------------------")
-      console.log('ETH Balance of etherPool: ', etherPoolETHBalance/(_1))
-      console.log('MAI Balance of etherPool: ', etherPoolMAIBalance/(_1))
-      console.log('MAI Price from etherPool: ', ethValueInMai/(_1))
-      console.log('USD Price from etherPool: ', ethPriceInUSD/(_1))
-      console.log('MAI PuPow from etherPool: ', ethPPInMAI/(_1))
-      
-      
-      // log balances of usdPool.asset, etherPool.mai, price(_1), PP(_1)
-      const usdPoolETHBalance = BN2Int(usdPool.asset);
-      const usdPoolMAIBalance = BN2Int(usdPool.mai);
-      const usdValueInMai = BN2Int(tools.getValueInMai(addressUSD))
-      const maiPPInUSD = BN2Int(tools.getMAIPPInUSD(int2Str(_eth)))
-      console.log(" ")
-      console.log("---------------------usdPool DETAILS--------------------")
-      console.log('ETH Balance of usdPool:   ', usdPoolETHBalance/(_1))
-      console.log('MAI Balance of usdPool:   ', usdPoolMAIBalance/(_1))
-      console.log('MAI Price from usdPool:   ', usdValueInMai/(_1))
-      console.log('MAI PuPow from usdPool:   ', maiPPInUSD/(_1))
+      console.log("-------------------Asset Pool DETAILS--------------------")
+      console.log('ETH Balance of Pool: ', assetBalance/(_1))
+      console.log('MAI Balance of Pool: ', assetMAIBalance/(_1))
+      console.log('MAI Price from Pool: ', ValueInMai/(_1))
+      console.log('USD Price of Ether:  ', PriceInUSD/(_1))
+      console.log('MAI PuPow from Pool: ', PPInMAI/(_1))
       }
       
-      async function logAccounts(_accCDP) {
-        
-        // log balanceETH of addressMAI, acc0, acc1
-        const acc0ETHbalance = await web3.eth.getBalance(acc0)
-        const acc1ETHbalance = await web3.eth.getBalance(acc1)
-        const addressETHbalance = await web3.eth.getBalance(addressETH)
+      async function logETHBalances(acc0, acc1, ETH) {
+        const acc0AssetBal = await web3.eth.getBalance(acc0)
+        const acc1AssetBal = await web3.eth.getBalance(acc1)
+        const addressETHBalance = await web3.eth.getBalance(ETH)
         console.log(" ")
         console.log("----------------------ETH BALANCES---------------------")
-        console.log('acc0:       ', acc0ETHbalance/(_1))
-        console.log('acc1:       ', acc1ETHbalance/(_1))
-        console.log('addressETH: ', addressETHbalance/(_1))
-      
-        // log balanceMAI of addressMAI, acc0, acc1
+        console.log('acc0:       ', acc0AssetBal/(_1))
+        console.log('acc1:       ', acc1AssetBal/(_1))
+        console.log('addressETH: ', addressETHBalance/(_1))
+      }
+
+        async function logMAIBalances(acc0, acc1, MAIAddress) {
+
+        const instanceMAI = await MAI.deployed();
         const acc0MAIBalance = BN2Int(await instanceMAI.balanceOf(acc0))
         const acc1MAIBalance = BN2Int(await instanceMAI.balanceOf(acc1))
-        const addressMAIBalance = BN2Int(await instanceMAI.balanceOf(addressMAI))
+        const addressMAIBalance = BN2Int(await instanceMAI.balanceOf(MAIAddress))
         console.log(" ")
         console.log("-----------------------MAI BALANCES--------------------")
         console.log('acc0:       ', acc0MAIBalance/(_1))  
         console.log('acc1:       ', acc1MAIBalance/(_1))  
-        console.log('addressMAI: ', addressMAIBalance/(_1))  
-      
-        // log CDP of accCDP: collateral, debt
-        const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(_accCDP))
+        console.log('addressMAI: ', addressMAIBalance/(_1)) 
+ 
+        } 
+
+        async function logCDP(CDPAddress) {
+        const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(CDPAddress))
         const Collateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
         const Debt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
         console.log(" ")
@@ -127,8 +107,8 @@ contract('MAI', function (accounts) {
         console.log('CDP:        ', CDP)
         console.log('Collateral: ', Collateral/(_1)) 
         console.log('Debt:       ', Debt/(_1)) 
-    
-      }
+   
+    } 
 
 module.exports = {
   BN2Int: function(BN) {
@@ -158,11 +138,17 @@ module.exports = {
   logType: function(thing) {
     return logType(thing)
   },
-  logAccounts: function(_accCDP) {
-    return logAccounts(_accCDP)
+  logETHBalances: function(acc0, acc1, ETH) {
+    return logETHBalances(acc0, acc1, ETH)
   },
-  logPools: function(_eth) {
-    return logPools(_eth)
+  logMAIBalances: function(acc0, acc1, MAI) {
+    return logMAIBalances(acc0, acc1, MAI)
+  },
+  logCDP: function(CDPAddress) {
+    return logCDP(CDPAddress)
+  },
+  logPool: function(addressAsset, amount) {
+    return logPool(addressAsset, amount)
   },
 
   };
