@@ -1,64 +1,67 @@
-
 var BigNumber = require('bignumber.js');
 var _1 = 1 * 10 ** 18; // 1 ETH
 const _1BN = new BigNumber(1 * 10 ** 18)
-var _dot01 = new BigNumber(1 * 10 ** 16)
 const addressETH = "0x0000000000000000000000000000000000000000"
-var addressUSD;
-const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
+const MAI = artifacts.require("MAI.sol");
+const USD = artifacts.require("tokenUSD.sol");
 const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
+var assetBal; 
+var maiBal;
+var addressUSD;
 
-
-  //################################################################
-  // CORE ARITHMETIC
+async function construct(){
+  instanceMAI = await MAI.deployed();
+  instanceUSD = await USD.new();
+  addressUSD = instanceUSD.address;
   
-  function getValueInMai(token) {
+}
+  async function getValueInMai(token) {
     var result
     if (token == addressETH) {
-      const etherBal = new BigNumber(etherPool.asset)
-      const maiBal = new BigNumber(etherPool.mai)
-      result = (_1BN.times(maiBal)).div(etherBal)
+    assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(token)).balanceAsset);
+    maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(token)).balanceMAI);
+      result = (_1BN.times(maiBal)).div(assetBal)
     } else {
-      const usdBal = new BigNumber(usdPool.asset)
-      const maiBal = new BigNumber(usdPool.mai)
-      result = (_1BN.times(maiBal)).div(usdBal)
+    assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(token)).balanceAsset);
+    maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(token)).balanceMAI);
+      result = (_1BN.times(maiBal)).div(assetBal)
     }
     return result.toFixed()
   }
 
-   function getValueInAsset(token) {
-    const usdBal = usdPool.asset
-    const maiBal = usdPool.mai
+  async function getValueInAsset(){
+    usdBal = new BigNumber(usdPool.asset)
+    maiBal = new BigNumber(usdPool.mai)
     return ((_1BN.times(usdBal)).div(maiBal)).toFixed()
   }
+   
   
-   function getEtherPriceInUSD(amount) {
+   async function getEtherPriceInUSD(amount) {
     const _amount = new BigNumber(amount)
-    const etherPriceInMai = new BigNumber(getValueInMai(addressETH))
-    const maiPriceInUSD = new BigNumber(getValueInAsset(addressUSD))
+    const etherPriceInMai = new BigNumber(await getValueInMai(addressETH))
+    const maiPriceInUSD = new BigNumber(await getValueInAsset())
     const ethPriceInUSD = (maiPriceInUSD.times(etherPriceInMai)).div(_1BN)
     return ((_amount.times(ethPriceInUSD)).div(_1BN)).toFixed()
   }
   
-    function getEtherPPinMAI(amount) {
-    const etherBal = etherPool.asset
-    const maiBal = etherPool.mai
-    const outputMai = _getCLPSwap(amount, etherBal, maiBal);
+  async function getEtherPPinMAI(amount) {
+    assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
+    maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
+    const outputMai = _getCLPSwap(amount, assetBal, maiBal);
     return outputMai;
   }
   
-   function getMAIPPInUSD(amount) {
-    const usdBal = usdPool.asset
-    const maiBal = usdPool.mai
-  
+   async function getMAIPPInUSD(amount) {
+    usdBal = new BigNumber(usdPool.asset)
+    maiBal = new BigNumber(usdPool.mai)
     const outputUSD = _getCLPSwap(amount.toString(), maiBal, usdBal);
     return outputUSD;
   }
   
-   function checkLiquidateCDP(_collateral, _debt){
-    const etherBal = etherPool.asset
-    const maiBal = etherPool.mai
-    const outputMai = _getCLPLiquidation(_collateral, etherBal, maiBal);
+   async function checkLiquidateCDP(_collateral, _debt){
+    assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
+    maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
+    const outputMai = _getCLPLiquidation(_collateral, assetBal, maiBal);
     //console.log("details", outputMai, _debt)
     var canLiquidate
     if(outputMai < _debt) {
@@ -131,8 +134,8 @@ module.exports = {
   getValueInMai: function(token) {
       return getValueInMai(token)
   },
-  getValueInAsset: function(token) {
-    return getValueInAsset(token)
+  getValueInAsset: function() {
+    return getValueInAsset()
 },
 getEtherPriceInUSD: function(amount) {
   return getEtherPriceInUSD(amount)

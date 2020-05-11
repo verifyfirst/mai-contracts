@@ -1,8 +1,7 @@
 var MAI = artifacts.require("./MAI.sol");
 var USD = artifacts.require("./tokenUSD.sol");
 
-const math = require('./core-math.js')
-const help = require('./helper.js');
+
 const assert = require("chai").assert;
 const truffleAssert = require('truffle-assertions');
 var BigNumber = require('bignumber.js');
@@ -20,15 +19,16 @@ var addressUSD;
 const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
 const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
 const initialMAI = 4 * _1; const initialETH = 3*10**16;
-
+var help;
+var math;
 
 contract('MAI', function (accounts) {
     constructor(accounts)
     checkMath(_dot001)
     checkPrices(_dot001)
     openCDP(_dot001, 110, acc1) // <- gets 0.15
-    addCollateralToCDP(_dot001, acc1)
-    remintMAIFromCDP(101, acc1)
+     addCollateralToCDP(_dot001, acc1)
+     remintMAIFromCDP(101, acc1)
     liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
     openCDP(_dot001, 110, acc1) // <- gets another 0.15 -> 0.3
     openCDP(_dot001, 110, acc1)
@@ -47,11 +47,16 @@ contract('MAI', function (accounts) {
     let USD = artifacts.require("tokenUSD.sol");
     instanceUSD = await USD.new();
     addressUSD = instanceUSD.address;
+    USD.setAsDeployed(instanceUSD);
 
     let MAI = artifacts.require("MAI.sol");
     instanceMAI = await MAI.new(addressUSD, {value:initialETH});
     addressMAI = instanceMAI.address;
+    MAI.setAsDeployed(instanceMAI);
+    help = require('./helper.js'); 
+    math = require('./core-math.js');
     
+
     const supply = help.BN2Int(await instanceMAI.totalSupply())
     assert.equal(supply, 4*_1, "supply is correct")
     const etherPool_asset = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
@@ -120,13 +125,14 @@ contract('MAI', function (accounts) {
     var newDebt; var newCollateral; var acc0Bal;
   
     it("Allows opening CDP", async () => {
+      
       const CDP = help.BN2Int(await instanceMAI.mapAddress_MemberData.call(_acc))
       if (CDP > 0) {
         existingDebt = help.BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
         existingCollateral = help.BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
       }
       const ethPPInMAI = help.BN2Int(await instanceMAI.getEtherPPinMAI(help.int2Str(_eth)))
-      const ethPP = help.BN2Int(await math.getEtherPPinMAI(help.int2Str(_eth)).toFixed())
+      const ethPP = help.BN2Int(await math.getEtherPPinMAI(_eth))
       assert.equal(ethPPInMAI, ethPP, "etherPP is correct")
       const mintAmount = (ethPPInMAI * 100) / (_ratio);
       newDebt = await help.roundBN2StrD(mintAmount)
