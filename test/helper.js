@@ -33,6 +33,10 @@ function roundBN2StrDR(BN, x) {
   const BN_ = (new BigNumber(BN)).toPrecision(x, 1)
   return (new BigNumber(BN_)).toFixed()
 }
+function roundBN2StrUR(BN, x) {
+  const BN_ = (new BigNumber(BN)).toPrecision(x, 0)
+  return (new BigNumber(BN_)).toFixed()
+}
 
 function assertLog(number1, number2, test) {
   return console.log(+(new BigNumber(number1)).toFixed(), +(new BigNumber(number2)).toFixed(), test)
@@ -116,6 +120,9 @@ module.exports = {
   },
   roundBN2StrDR: function(BN, x) {
     return roundBN2StrDR(BN, x)
+  },
+  roundBN2StrUR: function(BN, x) {
+    return roundBN2StrUR(BN, x)
   },
   assertLog: function(number1, number2, test) {
     return assertLog(number1, number2, test)
