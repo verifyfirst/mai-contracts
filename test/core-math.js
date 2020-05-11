@@ -104,6 +104,27 @@ const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
     const y = +(new BigNumber(_y)).toFixed();
     return y;
   }
+  function _getPoolUnits(a, A, m, M) {
+     // ((M + A) * (m * A + M * a))/(4 * M * A
+
+    const _m = new BigNumber(m);
+    const _a = new BigNumber(a);
+    const _M = new BigNumber(M);
+    const _A = new BigNumber(A);
+    const numerator1 = _M.plus(_A);
+    const numerator2 = _m.times(_A);
+    const numerator3 = _M.times(_a);
+    const numerator = numerator1.times((numerator2.plus(numerator3)));
+    const denominator = 4 * (_M.times(_A));
+    const _units = numerator.div(denominator);
+    const poolUnits = +(new BigNumber(_units)).toFixed();
+    return poolUnits;
+  }
+
+
+  
+    
+  
   
 
 module.exports = {
@@ -133,6 +154,9 @@ _getCLPFee: function(x, X, Y) {
 },
 _getCLPLiquidation: function(x, X, Y) {
   return _getCLPLiquidation(x, X, Y)
+},
+_getPoolUnits: function(a, A, m, M) {
+  return _getPoolUnits(a, A, m, M)
 }
 
 };
