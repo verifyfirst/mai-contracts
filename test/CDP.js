@@ -199,7 +199,7 @@ contract('MAI', function (accounts) {
   
   function addCollateralToCDP(_eth, _acc) {
   
-    it("Allows adding to  CDP", async () => {
+    it("Allows adding to CDP", async () => {
   
       let CDP = help.BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
       let existingDebt = help.BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)

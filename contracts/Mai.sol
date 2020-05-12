@@ -361,8 +361,6 @@ contract MAI is ERC20{
         return true;
     }
 
-
-
     function _removeLiquidity(address _asset, uint _bp) internal returns (uint _outputMAI, uint _outputAsset) {
         require(mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] > 0);
         require(_bp <= 10000); require(_bp > 0);
@@ -435,6 +433,7 @@ contract MAI is ERC20{
    }
 
    //##############################################
+   //ClP functions
 
     function getCLPSwap(uint x, uint X, uint Y) public pure returns (uint y){
         // y = (x * Y * X)/(x + X)^2

@@ -103,6 +103,7 @@ function removeLiquidity(addressPool, _bp, staker) {
     const _outputMAI = (_maiBal_Before * (_units)) / (_totalPoolUnits);
     const _outputAsset = (_assetBal_Before * (_units)) / (_totalPoolUnits);
 
+    console.log("units",_units, "outputMAi",_outputMAI,"output Asset", _outputAsset)
     let removeMai = await instanceMAI.removeLiquidityPool(addressPool, _bp, { from: staker })
 
     assert.equal(removeMai.logs.length, 3, "Two events was triggered");
@@ -117,9 +118,11 @@ function removeLiquidity(addressPool, _bp, staker) {
     //check Ether:MAi balance increase
     const etherPool_mai = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
     const etherPool_asset = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
-    console.log(await help.logPool(addressETH, _1))
+    // console.log(await help.logPool(addressETH, _1))
     assert.equal(etherPool_mai, (_maiBal_Before - _outputMAI), " removed Mai from Ether:Mai")
     assert.equal(etherPool_asset, (_assetBal_Before - _outputAsset), " removed Ether from Ether:Mai")
+    
+
 
     //check staker units
     const stakerUnits = help.BN2Int(await instanceMAI.getStakerUnits(addressPool, staker));
@@ -129,16 +132,6 @@ function removeLiquidity(addressPool, _bp, staker) {
 
 
     
-
-
-
-    // assert.equal(removeMai.logs[1].args.amountMAI, help.BN2Int(amountM), " amount mai is correct");
-    // assert.equal(help.BN2Int(removeMai.logs[1].args.unitsIssued), poolUnits, "units is correct");
-
-    //check Ether:MAi balance increase
-    // const etherPool_mai = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(address)).balanceMAI);
-    // assert.equal(etherPool_mai, +amountM + etherPool_mai_Before , " added Mai to Ether:Mai")
-    // console.log(await help.logPool(addressETH, _1))
   });
 
 }
