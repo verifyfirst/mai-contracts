@@ -320,15 +320,15 @@ contract MAI is ERC20{
     }
 
    
-    function _addLiquidity(address asset, uint amountAsset, uint amountMAI) internal {
+    function _addLiquidity(address asset, uint a, uint m) internal {
         if (mapAsset_ExchangeData[asset].listed = false) {                                                         
             exchanges.push(asset);                                                // Add new exchange
             mapAsset_ExchangeData[asset].listed = true;
-            mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
-            mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+            mapAsset_ExchangeData[asset].balanceMAI = m;
+            mapAsset_ExchangeData[asset].balanceAsset = a;
         } else {
-            mapAsset_ExchangeData[asset].balanceMAI += amountMAI;
-            mapAsset_ExchangeData[asset].balanceAsset += amountAsset;
+            mapAsset_ExchangeData[asset].balanceMAI += m;
+            mapAsset_ExchangeData[asset].balanceAsset += a;
         }
         if (mapAsset_ExchangeData[asset].stakerUnits[msg.sender] == 0) {
             mapAsset_ExchangeData[asset].stakers.push(msg.sender);
@@ -337,16 +337,10 @@ contract MAI is ERC20{
         }
         uint M = mapAsset_ExchangeData[asset].balanceMAI;
         uint A = mapAsset_ExchangeData[asset].balanceAsset;
-        // ((M + A) * (m * A + M * a))/(4 * M * A)
-        uint numerator1 = M.add(A);
-        uint numerator2 = amountMAI.mul(A);
-        uint numerator3 = M.mul(amountAsset);
-        uint numerator = numerator1.mul((numerator2.add(numerator3)));
-        uint denominator = 4 * (M.mul(A));
-        uint units = numerator.div(denominator);
+        uint units = calcStakeUnits(a, A, m, M);
         mapAsset_ExchangeData[asset].poolUnits += units;
         mapAsset_ExchangeData[asset].stakerUnits[msg.sender] += units;
-        emit AddLiquidity(asset, msg.sender, amountMAI, amountAsset, units);
+        emit AddLiquidity(asset, msg.sender, m, a, units);
     }
 
     function removeLiquidityPool(address asset, uint bp) public returns (bool success) {
@@ -357,7 +351,8 @@ contract MAI is ERC20{
         } else {
             ERC20(asset).transfer(msg.sender, _outputAsset);
         }
-        require (transfer(msg.sender, _outputMAI));
+
+        require (_transfer(address(this), msg.sender, _outputMAI));
         return true;
     }
 
@@ -372,9 +367,11 @@ contract MAI is ERC20{
         uint _balanceAsset = mapAsset_ExchangeData[_asset].balanceAsset;
         _outputMAI = (_balanceMAI.mul(_units)).div(_total);
         _outputAsset = (_balanceAsset.mul(_units)).div(_total);
-        mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] = 0;
+        mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] -= _units;
         mapAsset_ExchangeData[_asset].poolUnits -= _units;
-        require(MAI._approve(msg.sender, address(this), _units), 'Must approve first');
+        mapAsset_ExchangeData[_asset].balanceMAI -= _outputMAI;
+        mapAsset_ExchangeData[_asset].balanceAsset -= _outputAsset;
+        //require(MAI._approve(msg.sender, address(this), _units), 'Must approve first');
         emit RemoveLiquidity(_asset, msg.sender, _outputMAI, _outputAsset, _units);
         return(_outputMAI, _outputAsset);
     }
@@ -457,5 +454,16 @@ contract MAI is ERC20{
         uint denominator = (x.add(X)).mul(x.add(X));
         y = numerator.div(denominator);
         return y;
+    }
+
+    function calcStakeUnits(uint a, uint A, uint m, uint M) public pure returns (uint units){
+        // ((M + A) * (m * A + M * a))/(4 * M * A)
+        uint numerator1 = M.add(A);
+        uint numerator2 = m.mul(A);
+        uint numerator3 = M.mul(a);
+        uint numerator = numerator1.mul((numerator2.add(numerator3)));
+        uint denominator = 4 * (M.mul(A));
+        units = numerator.div(denominator);
+        return units;
     }
 }

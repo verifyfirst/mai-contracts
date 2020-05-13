@@ -108,8 +108,7 @@ async function construct(){
     return y;
   }
   function _getPoolUnits(a, A, m, M) {
-     // ((M + A) * (m * A + M * a))/(4 * M * A
-
+     // ((M + A) * (m * A + M * a))/(4 * M * A)
     const _m = new BigNumber(m);
     const _a = new BigNumber(a);
     const _M = new BigNumber(M);
