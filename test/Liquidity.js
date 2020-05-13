@@ -3,6 +3,9 @@ const assert = require("chai").assert;
 const truffleAssert = require('truffle-assertions');
 var BigNumber = require('bignumber.js');
 
+var MAI = artifacts.require("MAI.sol");
+var USD = artifacts.require("tokenUSD.sol");
+
 var instanceMAI; var addressMAI; var instanceUSD; var addressUSD;
 var acc0; var acc1; var acc2; var acc3;
 
@@ -12,37 +15,50 @@ var _dot01 = new BigNumber(1 * 10 ** 16)
 var _dot001 = new BigNumber(1 * 10 ** 15)
 var _dot2 = new BigNumber(2 * 10 ** 17)
 const addressETH = "0x0000000000000000000000000000000000000000"
-var addressUSD;
 const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
 const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
 const initialMAI = 4 * _1; const initialETH = 3 * 10 ** 16; //0.04
 var help;
 var math;
-contract('MAI', function (accounts) {
-  constructor(accounts)
-  logPool()
-  addLiquidity(addressETH, _1BN, _dot01, acc0)
-  logPool()
-  removeLiquidity(addressETH, 1000, acc0)
-  logPool()
-  addLiquidity(addressETH, _1BN, _dot01, acc0)
-  logPool()
-  removeLiquidity(addressETH, 1000, acc0)
-  logPool()
 
+const timeDelay = 1100;
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
+
+contract('Liquidity', async accounts => {
+
+  // async function start() {
+    constructor(accounts)
+    // logPool()
+    // addLiquidity(addressETH, _1BN, _dot01, acc0)
+    // logPool()
+    // removeLiquidity(addressETH, 1000, acc0)
+    // logPool()
+    // addLiquidity(addressETH, _1BN, _dot01, acc0)
+    // logPool()
+    // removeLiquidity(addressETH, 1000, acc0)
+    // logPool()
+  
+    // addExchange(addressUSD, amountAsset, amountMAI)
+    // console.log('addressUSD', addressUSD)
+    addLiquidityUSD(_1BN, _dot01, acc0)
+    logPool()
+    // removeLiquidity(addressUSD, 1000, acc0)
+    // logPool()
+  // }
+  // start()
 })
 //################################################################
 // CONSTRUCTION
-function constructor(accounts) {
+async function constructor(accounts) {
   acc0 = accounts[0]; acc1 = accounts[1]; acc2 = accounts[2]; acc3 = accounts[3]
 
   it("constructor events", async () => {
-    let USD = artifacts.require("tokenUSD.sol");
+    
     instanceUSD = await USD.new();
     USD.setAsDeployed(instanceUSD);
     addressUSD = instanceUSD.address;
 
-    let MAI = artifacts.require("MAI.sol");
     instanceMAI = await MAI.new(addressUSD, { value: initialETH });
     MAI.setAsDeployed(instanceMAI);
     addressMAI = instanceMAI.address;
@@ -67,21 +83,60 @@ function logPool(){
   })
 }
 
+// function addExchange(asset, amountAsset, amountMAI, _acc) {
+//   it("tests to add exchange", async () => {
+//     let addExchangeTX = await instanceMAI.addExchange(asset, amountAsset, amountMAI, {from: _acc });
+    
+//     const pool_mai_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(asset)).balanceMAI);
+//     const pool_asset_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(asset)).balanceAsset);
+
+//   })
+// }
+
+async function addLiquidityUSD(amountM, amountA, staker){
+  const addressUSD = instanceUSD.address;
+  console.log('addressUSD', addressUSD)
+  _addLiquidity(addressUSD, amountM, amountA, staker)
+}
+function addLiquidityETH(amountM, amountA, staker){
+  _addLiquidity(addressETH, amountM, amountA, staker)
+}
 
 //add liquidity to ether:MAI
-function addLiquidity(addressPool, amountM, amountA, staker) {
+function _addLiquidity(addressPool, amountM, amountA, staker) {
   it("tests to add liquidity", async () => {
-    const etherPool_mai_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
-    const etherPool_asset_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
-    const stakerUnitsB4 = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));
+    await delay(timeDelay)
+    let pool_mai_Before;
+    let pool_asset_Before;
+    let stakerUnitsB4;
+    console.log('addressPool', addressPool)
+    const addressUSD = instanceUSD.address;
+    console.log('addressUSD', addressUSD)
+    console.log('addressUSD', addressUSD)
 
-    // console.log(help.BN2Int(amountA), etherPool_asset_Before, help.BN2Int(amountM), etherPool_mai_Before)
+    console.log(addressPool)
+    let somthing = help.BN2INT(await instanceMAI.mapAsset_ExchangeData(addressUSD))
+    console.log(somthing)
+    
+
+    if (await instanceMAI.mapAsset_ExchangeData(addressPool)){
+      pool_mai_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
+      pool_asset_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
+      stakerUnitsB4 = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));  
+    }
+
+    // console.log(help.BN2Int(amountA), pool_asset_Before, help.BN2Int(amountM), pool_mai_Before)
     const units = math.calcPoolUnits(amountA, 
-      etherPool_asset_Before + help.BN2Int(amountA), amountM, 
-      etherPool_mai_Before + help.BN2Int(amountM))
+      pool_asset_Before + help.BN2Int(amountA), amountM, 
+      pool_mai_Before + help.BN2Int(amountM))
 
-    let txApproval = await instanceMAI.approve(addressMAI, amountM, { from: staker })
-    let addMai = await instanceMAI.addLiquidityToEtherPool(amountM, { from: staker, value: amountA })
+    let addMai
+    if (addressPool !== addressETH){
+      let txApproval = await instanceMAI.approve(addressPool, amountA, { from: staker })
+      addMai = await instanceMAI.addLiquidityToTokenPool(amountM, { from: staker, value: amountA })
+    } else {
+      addMai = await instanceMAI.addLiquidityToEtherPool(amountM, { from: staker, value: amountA })
+    }
 
     const balanceM = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
     const balanceA = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
@@ -96,8 +151,8 @@ function addLiquidity(addressPool, amountM, amountA, staker) {
     //check Ether:MAi balance increase
     const etherPool_mai = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
     const etherPool_asset = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
-    assert.equal(etherPool_mai, +amountM + etherPool_mai_Before, " added Mai to Ether:Mai")
-    assert.equal(etherPool_asset, +amountA + etherPool_asset_Before, " added Ether to Ether:Mai")
+    assert.equal(etherPool_mai, +amountM + pool_mai_Before, " added Mai to Ether:Mai")
+    assert.equal(etherPool_asset, +amountA + pool_asset_Before, " added Ether to Ether:Mai")
 
     //check staker units
     const stakerUnitsAfter = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));
@@ -106,7 +161,6 @@ function addLiquidity(addressPool, amountM, amountA, staker) {
     assert.equal(stakerUnitsAfter, (+stakerUnitsB4 + +units), "staker units is correct")
     assert.equal(stakerAddress, staker, "Staker Address is correct")
     
-
   });
 
 

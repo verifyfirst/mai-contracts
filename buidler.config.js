@@ -89,5 +89,8 @@ module.exports = {
       enabled: true,
       runs: 200
     }
-  }
+  },
+  mocha: {
+    timeout: 100000
+  },
 }

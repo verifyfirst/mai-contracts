@@ -1,6 +1,6 @@
 
-const tokenUSD = artifacts.require( "tokenUSD");
-const MAI = artifacts.require( "MAI");
+const tokenUSD = artifacts.require( "./tokenUSD.sol");
+const MAI = artifacts.require( "./MAI.sol");
 
 
 module.exports = function(deployer) {
