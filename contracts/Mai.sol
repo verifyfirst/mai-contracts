@@ -318,8 +318,7 @@ contract MAI is ERC20{
         _addLiquidity(asset, amountAsset, amountMAI);
         return true;
     }
-
-   
+ 
     function _addLiquidity(address asset, uint a, uint m) internal {
         if (mapAsset_ExchangeData[asset].listed = false) {                                                         
             exchanges.push(asset);                                                // Add new exchange
