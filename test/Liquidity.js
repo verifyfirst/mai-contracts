@@ -73,10 +73,10 @@ function addLiquidity(addressPool, amountM, amountA, staker) {
   it("tests to add liquidity", async () => {
     const etherPool_mai_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
     const etherPool_asset_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
-    const stakerUnitsB4 = help.BN2Int(await instanceMAI.getStakerUnits(addressPool, staker));
+    const stakerUnitsB4 = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));
 
     // console.log(help.BN2Int(amountA), etherPool_asset_Before, help.BN2Int(amountM), etherPool_mai_Before)
-    const units = math._getPoolUnits(amountA, 
+    const units = math.calcPoolUnits(amountA, 
       etherPool_asset_Before + help.BN2Int(amountA), amountM, 
       etherPool_mai_Before + help.BN2Int(amountM))
 
@@ -85,7 +85,7 @@ function addLiquidity(addressPool, amountM, amountA, staker) {
 
     const balanceM = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
     const balanceA = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
-    const poolUnits = math._getPoolUnits(amountA, balanceA, amountM, balanceM);
+    const poolUnits = math.calcPoolUnits(amountA, balanceA, amountM, balanceM);
 
     assert.equal(addMai.logs.length, 2, "Two events was triggered");
     assert.equal(addMai.logs[0].event, "Transfer", "Correct event");
@@ -100,8 +100,8 @@ function addLiquidity(addressPool, amountM, amountA, staker) {
     assert.equal(etherPool_asset, +amountA + etherPool_asset_Before, " added Ether to Ether:Mai")
 
     //check staker units
-    const stakerUnitsAfter = help.BN2Int(await instanceMAI.getStakerUnits(addressPool, staker));
-    const stakerAddress = (await instanceMAI.getStakerAddress(addressPool, 0));
+    const stakerUnitsAfter = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));
+    const stakerAddress = (await instanceMAI.calcStakerAddress(addressPool, 0));
     // console.log(stakerUnitsAfter, stakerUnitsB4, units)
     assert.equal(stakerUnitsAfter, (+stakerUnitsB4 + +units), "staker units is correct")
     assert.equal(stakerAddress, staker, "Staker Address is correct")
@@ -116,7 +116,7 @@ function removeLiquidity(addressPool, _bp, staker) {
   it("tests to remove liquidity", async () => {
     const _maiBal_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
     const _assetBal_Before = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
-    const _stakerUnits = help.BN2Int(await instanceMAI.getStakerUnits(addressPool, staker));
+    const _stakerUnits = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));
     const _totalPoolUnits = help.BN2Int((await instanceMAI.mapAsset_ExchangeData(addressPool)).poolUnits);
     const _units = (_stakerUnits * _bp) / 10000
     const _outputMAI = (_maiBal_Before * (_units)) / (_totalPoolUnits);
@@ -143,8 +143,8 @@ function removeLiquidity(addressPool, _bp, staker) {
     assert.equal(etherPool_asset, (_assetBal_Before - _outputAsset), " removed Ether from Ether:Mai")
     
     //check staker units
-    const stakerUnits = help.BN2Int(await instanceMAI.getStakerUnits(addressPool, staker));
-    const stakerAddress = (await instanceMAI.getStakerAddress(addressPool, 0));
+    const stakerUnits = help.BN2Int(await instanceMAI.calcStakerUnits(addressPool, staker));
+    const stakerAddress = (await instanceMAI.calcStakerAddress(addressPool, 0));
     //console.log(stakerUnits, +_stakerUnits, +_units)
     assert.equal(help.roundBN2StrUR(stakerUnits, 4), help.roundBN2StrUR((+_stakerUnits - +_units), 4), "staker units is correct")
     assert.equal(stakerAddress, staker, "Staker Address is correct")

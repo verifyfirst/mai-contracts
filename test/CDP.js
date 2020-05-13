@@ -1,6 +1,3 @@
-var MAI = artifacts.require("./MAI.sol");
-var USD = artifacts.require("./tokenUSD.sol");
-
 
 const assert = require("chai").assert;
 const truffleAssert = require('truffle-assertions');
@@ -24,9 +21,9 @@ var math;
 
 contract('MAI', function (accounts) {
     constructor(accounts)
-    checkMath(_dot001)
-    checkPrices(_dot001)
-    openCDP(_dot001, 110, acc1) // <- gets 0.15
+     checkMath(_dot001)
+     checkPrices(_dot001)
+     openCDP(_dot001, 110, acc1) // <- gets 0.15
      addCollateralToCDP(_dot001, acc1)
      remintMAIFromCDP(101, acc1)
     liquidateCDP(acc1, 3333)    // <- someone else gets MAI deleted
@@ -82,14 +79,14 @@ contract('MAI', function (accounts) {
   // MATH
   function checkMath(_val) {
     it("Checks core math", async () => {
-      const output = help.BN2Int(await instanceMAI.getCLPSwap(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
-      const _output = await math._getCLPSwap(_val, +etherPool.asset, +etherPool.mai)
+      const output = help.BN2Int(await instanceMAI.calcCLPSwap(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
+      const _output = await math.calcCLPSwap(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(output, _output, "swap is correct")
-      const fee = help.BN2Int(await instanceMAI.getCLPFee(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
-      const _fee = await math._getCLPFee(_val, +etherPool.asset, +etherPool.mai)
+      const fee = help.BN2Int(await instanceMAI.calcCLPFee(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
+      const _fee = await math.calcCLPFee(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(fee, _fee, "fee is correct")
-      const liquidation = help.BN2Int(await instanceMAI.getCLPLiquidation(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
-      const _liquidation = await math._getCLPLiquidation(_val, +etherPool.asset, +etherPool.mai)
+      const liquidation = help.BN2Int(await instanceMAI.calcCLPLiquidation(help.int2Str(_val), help.int2Str(etherPool.asset), help.int2Str(etherPool.mai)))
+      const _liquidation = await math.calcCLPLiquidation(_val, +etherPool.asset, +etherPool.mai)
       assert.equal(liquidation, _liquidation, "liquidation is correct")
     })
   }
@@ -97,22 +94,22 @@ contract('MAI', function (accounts) {
   function checkPrices(_eth) {
     it("Checks core logic", async () => {
   
-      const ethValueInMai = help.BN2Int(await instanceMAI.getValueInMAI(addressETH))
-      const usdValueInMai = help.BN2Int(await instanceMAI.getValueInMAI(addressUSD))
-      assert.equal(ethValueInMai, await math.getValueInMai(addressETH), "eth correct")
-      assert.equal(usdValueInMai, await math.getValueInMai(addressUSD), "usd correct")
+      const ethValueInMai = help.BN2Int(await instanceMAI.calcValueInMAI(addressETH))
+      const usdValueInMai = help.BN2Int(await instanceMAI.calcValueInMAI(addressUSD))
+      assert.equal(ethValueInMai, await math.calcValueInMai(addressETH), "eth correct")
+      assert.equal(usdValueInMai, await math.calcValueInMai(addressUSD), "usd correct")
   
-      const maiValueInUsd = help.BN2Int(await instanceMAI.getValueInAsset(addressUSD))
-      assert.equal(maiValueInUsd, await math.getValueInAsset(addressUSD), "mai is correct")
+      const maiValueInUsd = help.BN2Int(await instanceMAI.calcValueInAsset(addressUSD))
+      assert.equal(maiValueInUsd, await math.calcValueInAsset(addressUSD), "mai is correct")
   
-      const ethPriceInUSD = help.BN2Int(await instanceMAI.getEtherPriceInUSD(help.int2Str(_eth)))
-      assert.equal(ethPriceInUSD, await math.getEtherPriceInUSD(_eth), "ether is correct")
+      const ethPriceInUSD = help.BN2Int(await instanceMAI.calcEtherPriceInUSD(help.int2Str(_eth)))
+      assert.equal(ethPriceInUSD, await math.calcEtherPriceInUSD(_eth), "ether is correct")
   
-      const ethPPInMAI = help.BN2Int(await instanceMAI.getEtherPPinMAI(help.int2Str(_eth)))
-      assert.equal(ethPPInMAI, await math.getEtherPPinMAI(_eth), "mai is correct")
+      const ethPPInMAI = help.BN2Int(await instanceMAI.calcEtherPPinMAI(help.int2Str(_eth)))
+      assert.equal(ethPPInMAI, await math.calcEtherPPinMAI(_eth), "mai is correct")
   
-      const maiPPInUSD = help.BN2Int(await instanceMAI.getMAIPPInUSD(help.int2Str(ethPPInMAI)))
-      assert.equal(maiPPInUSD, await math.getMAIPPInUSD(ethPPInMAI), "mai is correct")
+      const maiPPInUSD = help.BN2Int(await instanceMAI.calcMAIPPInUSD(help.int2Str(ethPPInMAI)))
+      assert.equal(maiPPInUSD, await math.calcMAIPPInUSD(ethPPInMAI), "mai is correct")
   
     })
   }
@@ -131,8 +128,8 @@ contract('MAI', function (accounts) {
         existingDebt = help.BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
         existingCollateral = help.BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
       }
-      const ethPPInMAI = help.BN2Int(await instanceMAI.getEtherPPinMAI(help.int2Str(_eth)))
-      const ethPP = help.BN2Int(await math.getEtherPPinMAI(_eth))
+      const ethPPInMAI = help.BN2Int(await instanceMAI.calcEtherPPinMAI(help.int2Str(_eth)))
+      const ethPP = help.BN2Int(await math.calcEtherPPinMAI(_eth))
       assert.equal(ethPPInMAI, ethPP, "etherPP is correct")
       const mintAmount = (ethPPInMAI * 100) / (_ratio);
       newDebt = await help.roundBN2StrD(mintAmount)
@@ -204,7 +201,7 @@ contract('MAI', function (accounts) {
       let CDP = help.BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
       let existingDebt = help.BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
-      const ethPP = await math.getEtherPPinMAI(existingCollateral.plus(_eth))
+      const ethPP = await math.calcEtherPPinMAI(existingCollateral.plus(_eth))
       const cltrzn  = Math.floor((ethPP * 100) / existingDebt)
 
       let tx1 = await instanceMAI.addCollateralToCDP({ from: _acc, to: addressMAI, value: _eth });
@@ -229,7 +226,7 @@ contract('MAI', function (accounts) {
       let CDP = help.BN2Int(await instanceMAI.mapAddress_MemberData(_acc))
       let existingDebt = help.BN2Int((await instanceMAI.mapCDP_Data(CDP)).debt)
       let existingCollateral = new BigNumber((await instanceMAI.mapCDP_Data(CDP)).collateral)
-      const purchasingPower = await math.getEtherPPinMAI(existingCollateral);//how valuable Ether is in MAI
+      const purchasingPower = await math.calcEtherPPinMAI(existingCollateral);//how valuable Ether is in MAI
       const maxMintAmount = (purchasingPower * _ratio) / 100;
       additionalMintAmount = help.BN2Int(maxMintAmount - existingDebt);
       newDebt = help.roundBN2StrD(additionalMintAmount + existingDebt)
@@ -333,7 +330,7 @@ contract('MAI', function (accounts) {
       if (canLiquidateSC){
         const liquidatedCollateral = existingCollateral / (10000 / _bp)
         const debtDeleted = (existingDebt / (10000 / _bp))
-        const maiBought = await math.getEtherPPinMAI(liquidatedCollateral);
+        const maiBought = await math.calcEtherPPinMAI(liquidatedCollateral);
         const fee = maiBought - debtDeleted
 
         let tx1 = await instanceMAI.liquidateCDP(CDP, _bp, { from: _acc });

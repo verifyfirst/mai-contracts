@@ -8,14 +8,15 @@ const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
 var assetBal; 
 var maiBal;
 var addressUSD;
+construct();
 
 async function construct(){
   instanceMAI = await MAI.deployed();
   instanceUSD = await USD.new();
   addressUSD = instanceUSD.address;
-  
 }
-  async function getValueInMai(token) {
+  async function calcValueInMai(token) {
+    
     var result
     if (token == addressETH) {
     assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(token)).balanceAsset);
@@ -29,39 +30,39 @@ async function construct(){
     return result.toFixed()
   }
 
-  async function getValueInAsset(){
+  async function calcValueInAsset(){
     usdBal = new BigNumber(usdPool.asset)
     maiBal = new BigNumber(usdPool.mai)
     return ((_1BN.times(usdBal)).div(maiBal)).toFixed()
   }
    
   
-   async function getEtherPriceInUSD(amount) {
+   async function calcEtherPriceInUSD(amount) {
     const _amount = new BigNumber(amount)
-    const etherPriceInMai = new BigNumber(await getValueInMai(addressETH))
-    const maiPriceInUSD = new BigNumber(await getValueInAsset())
+    const etherPriceInMai = new BigNumber(await calcValueInMai(addressETH))
+    const maiPriceInUSD = new BigNumber(await calcValueInAsset())
     const ethPriceInUSD = (maiPriceInUSD.times(etherPriceInMai)).div(_1BN)
     return ((_amount.times(ethPriceInUSD)).div(_1BN)).toFixed()
   }
   
-  async function getEtherPPinMAI(amount) {
+  async function calcEtherPPinMAI(amount) {
     assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
     maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
-    const outputMai = _getCLPSwap(amount, assetBal, maiBal);
+    const outputMai = calcCLPSwap(amount, assetBal, maiBal);
     return outputMai;
   }
   
-   async function getMAIPPInUSD(amount) {
+   async function calcMAIPPInUSD(amount) {
     usdBal = new BigNumber(usdPool.asset)
     maiBal = new BigNumber(usdPool.mai)
-    const outputUSD = _getCLPSwap(amount.toString(), maiBal, usdBal);
+    const outputUSD = calcCLPSwap(amount.toString(), maiBal, usdBal);
     return outputUSD;
   }
   
    async function checkLiquidateCDP(_collateral, _debt){
     assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
     maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
-    const outputMai = _getCLPLiquidation(_collateral, assetBal, maiBal);
+    const outputMai = calcCLPLiquidation(_collateral, assetBal, maiBal);
     //console.log("details", outputMai, _debt)
     var canLiquidate
     if(outputMai < _debt) {
@@ -72,7 +73,7 @@ async function construct(){
     return canLiquidate;
   }
   
-    function _getCLPSwap(x, X, Y) {
+function calcCLPSwap(x, X, Y) {
     // y = (x * Y * X)/(x + X)^2
     const _x = new BigNumber(x)
     const _X = new BigNumber(X)
@@ -84,7 +85,7 @@ async function construct(){
     return y;
   }
   
-   function _getCLPFee(x, X, Y) {
+   function calcCLPFee(x, X, Y) {
     // y = (x * Y * x) / (x + X)^2
     const _x = new BigNumber(x)
     const _X = new BigNumber(X)
@@ -96,7 +97,7 @@ async function construct(){
     return y;
   }
   
-   function _getCLPLiquidation(x, X, Y) {
+   function calcCLPLiquidation(x, X, Y) {
     // y = (x * Y * (X - x))/(x + X)^2
     const _x = new BigNumber(x)
     const _X = new BigNumber(X)
@@ -107,7 +108,7 @@ async function construct(){
     const y = +(new BigNumber(_y)).toFixed();
     return y;
   }
-  function _getPoolUnits(a, A, m, M) {
+  function calcPoolUnits(a, A, m, M) {
      // ((M + A) * (m * A + M * a))/(4 * M * A)
     const _m = new BigNumber(m);
     const _a = new BigNumber(a);
@@ -130,35 +131,35 @@ async function construct(){
   
 
 module.exports = {
-  getValueInMai: function(token) {
-      return getValueInMai(token)
+  calcValueInMai: function(token) {
+      return calcValueInMai(token)
   },
-  getValueInAsset: function() {
-    return getValueInAsset()
+  calcValueInAsset: function() {
+    return calcValueInAsset()
 },
-getEtherPriceInUSD: function(amount) {
-  return getEtherPriceInUSD(amount)
+calcEtherPriceInUSD: function(amount) {
+  return calcEtherPriceInUSD(amount)
 },
-getEtherPPinMAI: function(amount) {
-  return getEtherPPinMAI(amount)
+calcEtherPPinMAI: function(amount) {
+  return calcEtherPPinMAI(amount)
 },
-getMAIPPInUSD: function(amount) {
-  return getMAIPPInUSD(amount)
+calcMAIPPInUSD: function(amount) {
+  return calcMAIPPInUSD(amount)
 },
 checkLiquidateCDP: function(_collateral, _debt) {
   return checkLiquidateCDP(_collateral, _debt)
 },
-_getCLPSwap: function(x, X, Y) {
-  return _getCLPSwap(x, X, Y)
+calcCLPSwap: function(x, X, Y) {
+  return calcCLPSwap(x, X, Y)
 },
-_getCLPFee: function(x, X, Y) {
-  return _getCLPFee(x, X, Y)
+calcCLPFee: function(x, X, Y) {
+  return calcCLPFee(x, X, Y)
 },
-_getCLPLiquidation: function(x, X, Y) {
-  return _getCLPLiquidation(x, X, Y)
+calcCLPLiquidation: function(x, X, Y) {
+  return calcCLPLiquidation(x, X, Y)
 },
-_getPoolUnits: function(a, A, m, M) {
-  return _getPoolUnits(a, A, m, M)
+calcPoolUnits: function(a, A, m, M) {
+  return calcPoolUnits(a, A, m, M)
 }
 
 };

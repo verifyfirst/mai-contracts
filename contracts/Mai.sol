@@ -179,11 +179,11 @@ contract MAI is ERC20{
         //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
       
     }
-    function getStakerUnits(address asset, address staker) public view returns(uint stakerUnits){
+    function calcStakerUnits(address asset, address staker) public view returns(uint stakerUnits){
          return (mapAsset_ExchangeData[asset].stakerUnits[staker]);
     }
 
-    function getStakerAddress(address asset, uint index) public view returns(address staker){
+    function calcStakerAddress(address asset, uint index) public view returns(address staker){
             return(mapAsset_ExchangeData[asset].stakers[index]);
     }
 
@@ -214,7 +214,7 @@ contract MAI is ERC20{
         uint CDP = mapAddress_MemberData[msg.sender].CDP;
         require (CDP > 0, "Must be an owner already");
         mapCDP_Data[CDP].collateral += msg.value;
-        uint purchasingPower = getEtherPPinMAI(mapCDP_Data[CDP].collateral);//how valuable Ether is in MAI
+        uint purchasingPower = calcEtherPPinMAI(mapCDP_Data[CDP].collateral);//how valuable Ether is in MAI
         uint collateralisation = ((purchasingPower).mul(100)).div(mapCDP_Data[CDP].debt);
         emit UpdateCDP(CDP, now, msg.sender, 0, msg.value, collateralisation);
         return true;
@@ -225,7 +225,7 @@ contract MAI is ERC20{
         uint CDP = mapAddress_MemberData[msg.sender].CDP;
         require (CDP != 0, "Must be an owner already");
         uint collateral = mapCDP_Data[CDP].collateral;
-        uint purchasingPower = getEtherPPinMAI(collateral);//how valuable Ether is in MAI
+        uint purchasingPower = calcEtherPPinMAI(collateral);//how valuable Ether is in MAI
         uint maxMintAmount = (purchasingPower.mul(collateralisation)).div(100);
         uint additionalMintAmount = maxMintAmount.sub(mapCDP_Data[CDP].debt);
         mapCDP_Data[CDP].debt += additionalMintAmount;
@@ -236,7 +236,7 @@ contract MAI is ERC20{
     }
 
     function _manageCDP(address payable _owner, uint _value, uint _collateralisation) internal returns (bool success){
-      uint purchasingPower = getEtherPPinMAI(_value);//how valuable Ether is in USD
+      uint purchasingPower = calcEtherPPinMAI(_value);//how valuable Ether is in USD
       uint mintAmount = (purchasingPower.mul(100)).div(_collateralisation);
       //uint mintAmount = 100000000000;
       uint CDP = mapAddress_MemberData[_owner].CDP;
@@ -289,7 +289,7 @@ contract MAI is ERC20{
             uint liquidatedCollateral = collateral.div(basisPoints.div(liquidation));
             uint debtDeleted = debt.div(basisPoints.div(liquidation));
             //TODO actually sell it
-            uint maiBought = getEtherPPinMAI(liquidatedCollateral);
+            uint maiBought = calcEtherPPinMAI(liquidatedCollateral);
             uint fee = maiBought - debtDeleted;
             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
             mapCDP_Data[CDP].debt -= debtDeleted;
@@ -378,39 +378,39 @@ contract MAI is ERC20{
     //==================================================================================//
     // Pricing functions
 
-   function getValueInMAI(address asset) public view returns (uint price){
+   function calcValueInMAI(address asset) public view returns (uint price){
        uint balAsset = mapAsset_ExchangeData[asset].balanceAsset;
        uint balMAI = mapAsset_ExchangeData[asset].balanceMAI;
        return (_1.mul(balMAI)).div(balAsset);
    }
 
-    function getValueInAsset(address asset) public view returns (uint price){
+    function calcValueInAsset(address asset) public view returns (uint price){
        uint balAsset = mapAsset_ExchangeData[asset].balanceAsset;
        uint balMAI = mapAsset_ExchangeData[asset].balanceMAI;
        return (_1.mul(balAsset)).div(balMAI);
    }
 
-   function getEtherPriceInUSD(uint amount) public view returns (uint amountBought){
-       uint etherPriceInMAI = getValueInMAI(address(0));
-       uint maiPriceInUSD = getValueInAsset(exchangeUSD);
+   function calcEtherPriceInUSD(uint amount) public view returns (uint amountBought){
+       uint etherPriceInMAI = calcValueInMAI(address(0));
+       uint maiPriceInUSD = calcValueInAsset(exchangeUSD);
        uint ethPriceInUSD = maiPriceInUSD.mul(etherPriceInMAI).div(_1);//
         //emit Testing3(etherPriceInMAI, maiPriceInUSD, ethPriceInUSD);
        return (amount.mul(ethPriceInUSD)).div(_1);
    }
 
-   function getEtherPPinMAI(uint amount) public view returns (uint amountBought){
+   function calcEtherPPinMAI(uint amount) public view returns (uint amountBought){
         uint etherBal = mapAsset_ExchangeData[address(0)].balanceAsset;
         uint balMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
-        uint outputMAI = getCLPSwap(amount, etherBal, balMAI);
-       // uint outputUSD = getMAIPPInUSD(outputMAI);
+        uint outputMAI = calcCLPSwap(amount, etherBal, balMAI);
+       // uint outputUSD = calcMAIPPInUSD(outputMAI);
         return outputMAI;
    }
 
-      function getMAIPPInUSD(uint amount) public view returns (uint amountBought){
+      function calcMAIPPInUSD(uint amount) public view returns (uint amountBought){
         uint balMAI = mapAsset_ExchangeData[exchangeUSD].balanceMAI;
         uint balanceUSD = mapAsset_ExchangeData[exchangeUSD].balanceAsset;
 
-        uint outputUSD = getCLPSwap(amount, balMAI, balanceUSD);
+        uint outputUSD = calcCLPSwap(amount, balMAI, balanceUSD);
         return outputUSD;
    }
 
@@ -419,7 +419,7 @@ contract MAI is ERC20{
         uint debt = mapCDP_Data[CDP].debt;
         uint etherBal = mapAsset_ExchangeData[address(0)].balanceAsset;
         uint balMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
-        uint outputMAI = getCLPLiquidation(collateral, etherBal, balMAI);
+        uint outputMAI = calcCLPLiquidation(collateral, etherBal, balMAI);
         if(outputMAI < debt) {
             canLiquidate = true;
         } else {
@@ -431,7 +431,7 @@ contract MAI is ERC20{
    //##############################################
    //ClP functions
 
-    function getCLPSwap(uint x, uint X, uint Y) public pure returns (uint y){
+    function calcCLPSwap(uint x, uint X, uint Y) public pure returns (uint y){
         // y = (x * Y * X)/(x + X)^2
         uint numerator = x.mul(Y.mul(X));
         uint denominator = (x.add(X)).mul(x.add(X));
@@ -439,7 +439,7 @@ contract MAI is ERC20{
         return y;
     }
 
-    function getCLPFee(uint x, uint X, uint Y) public pure returns (uint y){
+    function calcCLPFee(uint x, uint X, uint Y) public pure returns (uint y){
         // y = (x * Y * x) / (x + X)^2
         uint numerator = x.mul(Y.mul(x));
         uint denominator = (x.add(X)).mul(x.add(X));
@@ -447,7 +447,7 @@ contract MAI is ERC20{
         return y;
     }
 
-    function getCLPLiquidation(uint x, uint X, uint Y) public pure returns (uint y){
+    function calcCLPLiquidation(uint x, uint X, uint Y) public pure returns (uint y){
         // y = (x * Y * (X - x))/(x + X)^2
         uint numerator = (x.mul(Y.mul(X.sub(x))));
         uint denominator = (x.add(X)).mul(x.add(X));
