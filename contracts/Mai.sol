@@ -370,10 +370,29 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[_asset].poolUnits -= _units;
         mapAsset_ExchangeData[_asset].balanceMAI -= _outputMAI;
         mapAsset_ExchangeData[_asset].balanceAsset -= _outputAsset;
-        //require(MAI._approve(msg.sender, address(this), _units), 'Must approve first');
         emit RemoveLiquidity(_asset, msg.sender, _outputMAI, _outputAsset, _units);
         return(_outputMAI, _outputAsset);
     }
+
+
+    function _swapEtherToToken(address _token, address _owner, uint _amount) internal returns (bool success){
+        require((_amount > 0), "Must get Eth");
+        require((mapAsset_ExchangeData[_token].listed));
+         uint _output; uint _y; uint _balanceEth; uint _balanceToken; uint _balanceMAI;
+        _balanceEth = mapAsset_ExchangeData[_owner].balanceAsset;
+        if(_token == address(this)) {
+           _balanceMAI = mapAsset_ExchangeData[_token].balanceMAI;
+	        _output = calcCLPSwap(_amount, _balanceEth, _balanceMAI );
+         } else {
+            _balanceMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
+            _balanceToken = mapAsset_ExchangeData[_token].balanceAsset;
+           	_y = calcCLPSwap(_amount, _balanceEth, _balanceMAI);
+	        _output = calcCLPSwap(_y, _balanceMAI, _balanceToken);
+         }
+        require (_transfer(_token, _owner, _output));//ERC20
+        return true;
+    }
+
 
     //==================================================================================//
     // Pricing functions

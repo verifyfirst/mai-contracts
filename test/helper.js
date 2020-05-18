@@ -68,11 +68,11 @@ async function logPool(addressAsset, amount) {
   const PPInMAI = +(new BigNumber(await math.calcEtherPPinMAI(int2Str(amount))));
   console.log(" ")
   console.log("-------------------Asset Pool DETAILS--------------------")
-  console.log('ETH Balance of Pool: ', assetBalance / (_1))
-  console.log('MAI Balance of Pool: ', assetMAIBalance / (_1))
-  console.log('MAI Price from Pool: ', ValueInMai / (_1))
-  console.log('USD Price of Ether:  ', PriceInUSD / (_1))
-  console.log('MAI PuPow from Pool: ', PPInMAI / (_1))
+  console.log('Asset Pool Balance    :  ', assetBalance / (_1))
+  console.log('MAI Pool Balance      :  ', assetMAIBalance / (_1))
+  console.log('MAI Price from Pool   :  ', ValueInMai / (_1))
+  console.log('USD Price eth:mai     :  ', PriceInUSD / (_1))
+  console.log('MAI PP from eth:mai   :  ', PPInMAI / (_1))
 }
 
 async function logETHBalances(acc0, acc1, ETH) {
