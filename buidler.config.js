@@ -77,10 +77,6 @@ module.exports = {
   networks: {
     localhost: {
       url: 'http://localhost:7545',
-      /*
-            accounts: {
-              mnemonic: "SOME MNEMONIC TEXT HERE"
-            },*/
     },
   },
   solc: {

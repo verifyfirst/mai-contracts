@@ -1,4 +1,4 @@
-const MAI = artifacts.require("MAI.sol");
+// const MAI = artifacts.require("MAI.sol");
 const math = require('./core-math.js');
 var BigNumber = require('bignumber.js');
 var _1 = 1 * 10 ** 18; // 1 ETH
@@ -59,13 +59,13 @@ function logType(thing) {
   return console.log("%s type", thing, typeof thing)
 }
 
-async function logPool(addressAsset, amount) {
-  instanceMAI = await MAI.deployed();
+async function logPool(instanceMAI, addressAsset, amount) {
+  // instanceMAI = await MAI.deployed();
   const assetBalance = BN2Str((await instanceMAI.mapAsset_ExchangeData(addressAsset)).balanceAsset);
   const assetMAIBalance = BN2Str((await instanceMAI.mapAsset_ExchangeData(addressAsset)).balanceMAI);
-  const ValueInMai = +(new BigNumber(await math.calcValueInMai(addressAsset)));
-  const PriceInUSD = +(new BigNumber(await math.calcEtherPriceInUSD(int2Str(amount))));
-  const PPInMAI = +(new BigNumber(await math.calcEtherPPinMAI(int2Str(amount))));
+  const ValueInMai = +(new BigNumber(await math.calcValueInMai(instanceMAI, addressAsset)));
+  const PriceInUSD = +(new BigNumber(await math.calcEtherPriceInUSD(instanceMAI, int2Str(amount))));
+  const PPInMAI = +(new BigNumber(await math.calcEtherPPinMAI(instanceMAI, int2Str(amount))));
   console.log(" ")
   console.log("-------------------Asset Pool DETAILS--------------------")
   console.log('ETH Balance of Pool: ', assetBalance / (_1))
@@ -86,8 +86,8 @@ async function logETHBalances(acc0, acc1, ETH) {
   console.log('addressETH: ', addressETHBalance / (_1))
 }
 
-async function logMAIBalances(acc0, acc1, MAIAddress) {
-  instanceMAI = await MAI.deployed();
+async function logMAIBalances(instanceMAI, acc0, acc1, MAIAddress) {
+  // instanceMAI = await MAI.deployed();
   const acc0MAIBalance = BN2Int(await instanceMAI.balanceOf(acc0))
   const acc1MAIBalance = BN2Int(await instanceMAI.balanceOf(acc1))
   const addressMAIBalance = BN2Int(await instanceMAI.balanceOf(MAIAddress))
@@ -99,8 +99,8 @@ async function logMAIBalances(acc0, acc1, MAIAddress) {
 
 }
 
-async function logCDP(CDPAddress) {
-  instanceMAI = await MAI.deployed();
+async function logCDP(instanceMAI, CDPAddress) {
+  // instanceMAI = await MAI.deployed();
   const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(CDPAddress))
   const Collateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
   const Debt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
@@ -152,14 +152,14 @@ module.exports = {
   logETHBalances: function (acc0, acc1, ETH) {
     return logETHBalances(acc0, acc1, ETH)
   },
-  logMAIBalances: function (acc0, acc1, MAI) {
-    return logMAIBalances(acc0, acc1, MAI)
+  logMAIBalances: function (instanceMAI, acc0, acc1, MAI) {
+    return logMAIBalances(instanceMAI, acc0, acc1, MAI)
   },
-  logCDP: function (CDPAddress) {
-    return logCDP(CDPAddress)
+  logCDP: function (instanceMAI, CDPAddress) {
+    return logCDP(instanceMAI, CDPAddress)
   },
-  logPool: function (addressAsset, amount) {
-    return logPool(addressAsset, amount)
+  logPool: function (instanceMAI, addressAsset, amount) {
+    return logPool(instanceMAI, addressAsset, amount)
   }
 };
 

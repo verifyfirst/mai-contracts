@@ -2,20 +2,20 @@ var BigNumber = require('bignumber.js');
 var _1 = 1 * 10 ** 18; // 1 ETH
 const _1BN = new BigNumber(1 * 10 ** 18)
 const addressETH = "0x0000000000000000000000000000000000000000"
-const MAI = artifacts.require("MAI.sol");
-const USD = artifacts.require("tokenUSD.sol");
+// const MAI = artifacts.require("MAI.sol");
+// const USD = artifacts.require("tokenUSD.sol");
 const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() }
 var assetBal; 
-var maiBal;
+var maiBal; var usdBal;
 var addressUSD;
-construct();
+// construct();
 
-async function construct(){
-  instanceMAI = await MAI.deployed();
-  instanceUSD = await USD.new();
-  addressUSD = instanceUSD.address;
-}
-  async function calcValueInMai(token) {
+// async function construct(){
+//   instanceMAI = await MAI.deployed();
+//   instanceUSD = await USD.new();
+//   addressUSD = instanceUSD.address;
+// }
+  async function calcValueInMai(instanceMAI, token) {
     
     var result
     if (token == addressETH) {
@@ -37,15 +37,15 @@ async function construct(){
   }
    
   
-   async function calcEtherPriceInUSD(amount) {
+   async function calcEtherPriceInUSD(instanceMAI, amount) {
     const _amount = new BigNumber(amount)
-    const etherPriceInMai = new BigNumber(await calcValueInMai(addressETH))
+    const etherPriceInMai = new BigNumber(await calcValueInMai(instanceMAI, addressETH))
     const maiPriceInUSD = new BigNumber(await calcValueInAsset())
     const ethPriceInUSD = (maiPriceInUSD.times(etherPriceInMai)).div(_1BN)
     return ((_amount.times(ethPriceInUSD)).div(_1BN)).toFixed()
   }
   
-  async function calcEtherPPinMAI(amount) {
+  async function calcEtherPPinMAI(instanceMAI, amount) {
     assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
     maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
     const outputMai = calcCLPSwap(amount, assetBal, maiBal);
@@ -59,7 +59,7 @@ async function construct(){
     return outputUSD;
   }
   
-   async function checkLiquidateCDP(_collateral, _debt){
+   async function checkLiquidateCDP(instanceMAI, _collateral, _debt){
     assetBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceAsset);
     maiBal = new BigNumber((await instanceMAI.mapAsset_ExchangeData(addressETH)).balanceMAI);
     const outputMai = calcCLPLiquidation(_collateral, assetBal, maiBal);
@@ -131,23 +131,23 @@ function calcCLPSwap(x, X, Y) {
   
 
 module.exports = {
-  calcValueInMai: function(token) {
-      return calcValueInMai(token)
+  calcValueInMai: function(instanceMAI, token) {
+      return calcValueInMai(instanceMAI, token)
   },
   calcValueInAsset: function() {
     return calcValueInAsset()
 },
-calcEtherPriceInUSD: function(amount) {
-  return calcEtherPriceInUSD(amount)
+calcEtherPriceInUSD: function(instanceMAI, amount) {
+  return calcEtherPriceInUSD(instanceMAI, amount)
 },
-calcEtherPPinMAI: function(amount) {
-  return calcEtherPPinMAI(amount)
+calcEtherPPinMAI: function(instanceMAI, amount) {
+  return calcEtherPPinMAI(instanceMAI, amount)
 },
 calcMAIPPInUSD: function(amount) {
   return calcMAIPPInUSD(amount)
 },
-checkLiquidateCDP: function(_collateral, _debt) {
-  return checkLiquidateCDP(_collateral, _debt)
+checkLiquidateCDP: function(instanceMAI, _collateral, _debt) {
+  return checkLiquidateCDP(instanceMAI, _collateral, _debt)
 },
 calcCLPSwap: function(x, X, Y) {
   return calcCLPSwap(x, X, Y)
