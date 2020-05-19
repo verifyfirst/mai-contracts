@@ -1,80 +1,72 @@
-// const MAI = artifacts.require("MAI.sol");
-const math = require('./core-math.js');
 var BigNumber = require('bignumber.js');
-var _1 = 1 * 10 ** 18; // 1 ETH
-var accounts;
-
-//################################################################
-// CONSTRUCTION
-function constructor() {
-  acc0 = accounts[0]; acc1 = accounts[1]; acc2 = accounts[2]; acc3 = accounts[3]
-
+var _1 = 1 * 10 ** 18;
+const usdPool = { "asset": (2 * _1).toString(), "mai": (2 * _1).toString() };
+const addressETH = "0x0000000000000000000000000000000000000000"
+const math = require('./math.js');
+const _1BN = new BigNumber(1 * 10 ** 18)
+async function calcValueInMai(instance, token) {
+  var result;
+  if (token == addressETH) {
+    assetBal = new BigNumber((await instance.mapAsset_ExchangeData(token)).balanceAsset);
+    maiBal = new BigNumber((await instance.mapAsset_ExchangeData(token)).balanceMAI);
+    result = (_1BN.times(maiBal)).div(assetBal)
+  } else {
+    assetBal = new BigNumber((await instance.mapAsset_ExchangeData(token)).balanceAsset);
+    maiBal = new BigNumber((await instance.mapAsset_ExchangeData(token)).balanceMAI);
+    result = (_1BN.times(maiBal)).div(assetBal)
+  }
+  return result.toFixed()
 }
-
-//################################################################
-// HELPERS
-
-function BN2Int(BN) { return +(new BigNumber(BN)).toFixed() }
-
-function BN2Str(BN) { return (new BigNumber(BN)).toFixed() }
-
-function int2BN(int) { return (new BigNumber(int)) }
-
-function int2Str(int) { return ((int).toString()) }
-
-function int2Num(int) { return (int / (1 * 10 ** 18)) }
-
-function ETH(x) {
-  return new BigNumber(x * 10 ** 18);
+async function calcValueInAsset() {
+  usdBal = new BigNumber(usdPool.asset)
+  maiBal = new BigNumber(usdPool.mai)
+  return ((_1BN.times(usdBal)).div(maiBal)).toFixed()
 }
-function ETH01(x) {
-
-  return new BigNumber(x * 10 ** 16);
+async function calcEtherPriceInUSD(instance, amount) {
+  const _amount = new BigNumber(amount)
+  const etherPriceInMai = new BigNumber(await calcValueInMai(instance, addressETH))
+  const maiPriceInUSD = new BigNumber(await calcValueInAsset())
+  const ethPriceInUSD = (maiPriceInUSD.times(etherPriceInMai)).div(_1BN)
+  return ((_amount.times(ethPriceInUSD)).div(_1BN)).toFixed()
 }
-function ETH001(x) {
-
-  return new BigNumber(x * 10 ** 14);
+async function calcEtherPPinMAI(instance, amount) {
+  assetBal = new BigNumber((await instance.mapAsset_ExchangeData(addressETH)).balanceAsset);
+  maiBal = new BigNumber((await instance.mapAsset_ExchangeData(addressETH)).balanceMAI);
+  const outputMai = math.calcCLPSwap(amount, assetBal, maiBal);
+  return outputMai;
 }
-
-
-function roundBN2StrD(BN) {
-  const BN_ = (new BigNumber(BN)).toPrecision(11, 1)
-  return (new BigNumber(BN_)).toFixed()
+async function calcMAIPPInUSD(amount) {
+  usdBal = new BigNumber(usdPool.asset)
+  maiBal = new BigNumber(usdPool.mai)
+  const outputUSD = math.calcCLPSwap(amount.toString(), maiBal, usdBal);
+  return outputUSD;
 }
-
-function roundBN2StrDR(BN, x) {
-  const BN_ = (new BigNumber(BN)).toPrecision(x, 1)
-  return (new BigNumber(BN_)).toFixed()
+async function checkLiquidateCDP(instance, _collateral, _debt) {
+  assetBal = new BigNumber((await instance.mapAsset_ExchangeData(addressETH)).balanceAsset);
+  maiBal = new BigNumber((await instance.mapAsset_ExchangeData(addressETH)).balanceMAI);
+  const outputMai = math.calcCLPLiquidation(_collateral, assetBal, maiBal);
+  var canLiquidate
+  if (outputMai < _debt) {
+    canLiquidate = true;
+  } else {
+    canLiquidate = false;
+  }
+  return canLiquidate;
 }
-function roundBN2StrUR(BN, x) {
-  const BN_ = (new BigNumber(BN)).toPrecision(x, 0)
-  return (new BigNumber(BN_)).toFixed()
-}
-
-function assertLog(number1, number2, test) {
-  return console.log(+(new BigNumber(number1)).toFixed(), +(new BigNumber(number2)).toFixed(), test)
-}
-
-function logType(thing) {
-  return console.log("%s type", thing, typeof thing)
-}
-
-async function logPool(instanceMAI, addressAsset, amount) {
-  // instanceMAI = await MAI.deployed();
-  const assetBalance = BN2Str((await instanceMAI.mapAsset_ExchangeData(addressAsset)).balanceAsset);
-  const assetMAIBalance = BN2Str((await instanceMAI.mapAsset_ExchangeData(addressAsset)).balanceMAI);
-  const ValueInMai = +(new BigNumber(await math.calcValueInMai(instanceMAI, addressAsset)));
-  const PriceInUSD = +(new BigNumber(await math.calcEtherPriceInUSD(instanceMAI, int2Str(amount))));
-  const PPInMAI = +(new BigNumber(await math.calcEtherPPinMAI(instanceMAI, int2Str(amount))));
+async function logPool(instance, addressAsset, amount) {
+  const assetBalance = +(new BigNumber((await instance.mapAsset_ExchangeData(addressAsset)).balanceAsset));
+  const assetMAIBalance = +(new BigNumber((await instance.mapAsset_ExchangeData(addressAsset)).balanceMAI));
+  const ValueInMai = +(new BigNumber(await calcValueInMai(instance, addressAsset)));
+  const PriceInUSD = +(new BigNumber(await calcEtherPriceInUSD(instance, amount)));
+  const PPInMAI = +(new BigNumber(await calcEtherPPinMAI(instance, amount)));
   console.log(" ")
-  console.log("-------------------Asset Pool DETAILS--------------------")
+  console.log("-------------------Asset Pool Details -------------------")
   console.log('Asset Pool Balance    :  ', assetBalance / (_1))
   console.log('MAI Pool Balance      :  ', assetMAIBalance / (_1))
   console.log('MAI Price from Pool   :  ', ValueInMai / (_1))
   console.log('USD Price eth:mai     :  ', PriceInUSD / (_1))
   console.log('MAI PP from eth:mai   :  ', PPInMAI / (_1))
 }
-
 async function logETHBalances(acc0, acc1, ETH) {
   const acc0AssetBal = await web3.eth.getBalance(acc0)
   const acc1AssetBal = await web3.eth.getBalance(acc1)
@@ -85,12 +77,11 @@ async function logETHBalances(acc0, acc1, ETH) {
   console.log('acc1:       ', acc1AssetBal / (_1))
   console.log('addressETH: ', addressETHBalance / (_1))
 }
-
-async function logMAIBalances(instanceMAI, acc0, acc1, MAIAddress) {
-  // instanceMAI = await MAI.deployed();
-  const acc0MAIBalance = BN2Int(await instanceMAI.balanceOf(acc0))
-  const acc1MAIBalance = BN2Int(await instanceMAI.balanceOf(acc1))
-  const addressMAIBalance = BN2Int(await instanceMAI.balanceOf(MAIAddress))
+async function logMAIBalances(instance, acc0, acc1, MAIAddress) {
+  // instance = await MAI.deployed();
+  const acc0MAIBalance = BN2Int(await instance.balanceOf(acc0))
+  const acc1MAIBalance = BN2Int(await instance.balanceOf(acc1))
+  const addressMAIBalance = BN2Int(await instance.balanceOf(MAIAddress))
   console.log(" ")
   console.log("-----------------------MAI BALANCES--------------------")
   console.log('acc0:       ', acc0MAIBalance / (_1))
@@ -98,12 +89,11 @@ async function logMAIBalances(instanceMAI, acc0, acc1, MAIAddress) {
   console.log('addressMAI: ', addressMAIBalance / (_1))
 
 }
-
-async function logCDP(instanceMAI, CDPAddress) {
-  // instanceMAI = await MAI.deployed();
-  const CDP = BN2Int(await instanceMAI.mapAddress_MemberData.call(CDPAddress))
-  const Collateral = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
-  const Debt = BN2Int((await instanceMAI.mapCDP_Data.call(CDP)).debt)
+async function logCDP(instance, CDPAddress) {
+  // instance = await MAI.deployed();
+  const CDP = new BigNumber(await instance.mapAddress_MemberData.call(CDPAddress)).toFixed();
+  const Collateral = new BigNumber((await instance.mapCDP_Data.call(CDP)).collateral).toFixed();
+  const Debt = new BigNumber((await instance.mapCDP_Data.call(CDP)).debt).toFixed();
   console.log(" ")
   console.log("-----------------------CDP DETAILS----------------------")
   console.log('CDP:        ', CDP)
@@ -113,68 +103,26 @@ async function logCDP(instanceMAI, CDPAddress) {
 }
 
 module.exports = {
-  ETH001: ETH001
+  logCDP: logCDP
   ,
-  ETH01: ETH01
+  logMAIBalances: logMAIBalances
   ,
-  ETH: ETH
+  logETHBalances: logETHBalances
   ,
-  BN2Int: function (BN) {
-    return BN2Int(BN)
-  },
-  BN2Str: function (BN) {
-    return BN2Str(BN)
-  },
-  int2BN: function (a) {
-    return int2BN(a)
-  },
-  int2Str: function (int) {
-    return int2Str(int)
-  },
-  int2Num: function (int) {
-    return int2Num(int)
-  },
-  roundBN2StrD: function (BN) {
-    return roundBN2StrD(BN)
-  },
-  roundBN2StrDR: function (BN, x) {
-    return roundBN2StrDR(BN, x)
-  },
-  roundBN2StrUR: function (BN, x) {
-    return roundBN2StrUR(BN, x)
-  },
-  assertLog: function (number1, number2, test) {
-    return assertLog(number1, number2, test)
-  },
-  logType: function (thing) {
-    return logType(thing)
-  },
-  logETHBalances: function (acc0, acc1, ETH) {
-    return logETHBalances(acc0, acc1, ETH)
-  },
-  logMAIBalances: function (instanceMAI, acc0, acc1, MAI) {
-    return logMAIBalances(instanceMAI, acc0, acc1, MAI)
-  },
-  logCDP: function (instanceMAI, CDPAddress) {
-    return logCDP(instanceMAI, CDPAddress)
-  },
-  logPool: function (instanceMAI, addressAsset, amount) {
-    return logPool(instanceMAI, addressAsset, amount)
-  }
-};
+  logPool: logPool
+  ,
+  checkLiquidateCDP: checkLiquidateCDP
+  ,
+  calcMAIPPInUSD: calcMAIPPInUSD
+  ,
+  calcEtherPPinMAI: calcEtherPPinMAI
+  ,
+  calcEtherPriceInUSD: calcEtherPriceInUSD
+  ,
+  calcValueInAsset: calcValueInAsset
+  ,
+  calcValueInMai: calcValueInMai
+  ,
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
