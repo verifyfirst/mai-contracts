@@ -8,7 +8,7 @@ function calcCLPSwap(x, X, Y) {
     const numerator = _x.times(_Y).times(_X)
     const denominator = (_x.plus(_X)).times((_x.plus(_X)))
     const _y = numerator.div(denominator)
-    const y = +(new BigNumber(_y)).toFixed();
+    const y = (new BigNumber(_y)).integerValue(1);
     return y;
   }
   
@@ -20,7 +20,7 @@ function calcCLPSwap(x, X, Y) {
     const numerator = _x.times(_Y.times(_x));
     const denominator = (_x.plus(_X)).times(_x.plus(_X));
     const _y = numerator.div(denominator);
-    const y = +(new BigNumber(_y)).toFixed();
+    const y = (new BigNumber(_y)).integerValue(1);
     return y;
   }
   
@@ -32,7 +32,7 @@ function calcCLPSwap(x, X, Y) {
     const numerator = _x.times(_Y.times(_X.minus(_x)));
     const denominator = (_x.plus(_X)).times(_x.plus(_X));
     const _y = numerator.div(denominator);
-    const y = +(new BigNumber(_y)).toFixed();
+    const y = (new BigNumber(_y)).integerValue(1);
     return y;
   }
   function calcPoolUnits(a, A, m, M) {
@@ -47,7 +47,7 @@ function calcCLPSwap(x, X, Y) {
     const numerator = numerator1.times((numerator2.plus(numerator3)));
     const denominator = 4 * (_M.times(_A));
     const _units = numerator.div(denominator);
-    const poolUnits = +(new BigNumber(_units)).toFixed();
+    const poolUnits = (new BigNumber(_units)).integerValue(1);
     return poolUnits;
   }
 

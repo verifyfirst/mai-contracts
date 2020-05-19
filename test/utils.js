@@ -1,6 +1,7 @@
 
 var BigNumber = require('bignumber.js');
 
+function getBN(BN) { return (new BigNumber(BN))}
 
 function BN2Int(BN) { return +(new BigNumber(BN)).toFixed() }
 
@@ -22,8 +23,15 @@ function ETH01(x) {
 function ETH001(x) {
   return new BigNumber(x * 10 ** 14);
 }
+function floorBN(BN){
+  return (new BigNumber(BN)).integerValue(1)
+}
 function roundBN2StrD(BN) {
   const BN_ = (new BigNumber(BN)).toPrecision(11, 1)
+  return (new BigNumber(BN_)).toFixed()
+}
+function roundBN2StrU(BN) {
+  const BN_ = (new BigNumber(BN)).toPrecision(11, 0)
   return (new BigNumber(BN_)).toFixed()
 }
 function roundBN2StrDR(BN, x) {
@@ -44,8 +52,8 @@ function logType(thing) {
 module.exports = {
   BN2Int: BN2Int
   ,
-  BN2Str: BN2Str
-  ,
+  BN2Str: BN2Str,
+  getBN,
   int2BN: int2BN
   ,
   int2Str: int2Str
@@ -58,8 +66,10 @@ module.exports = {
   ,
   ETH001: ETH001
   ,
+  floorBN,
   roundBN2StrD: roundBN2StrD
   ,
+  roundBN2StrU,
   roundBN2StrDR: roundBN2StrDR
   ,
   roundBN2StrUR: roundBN2StrUR
