@@ -378,7 +378,7 @@ contract MAI is ERC20{
     }
 
     function swapTokenToToken(address assetFrom, address assetTo, uint amount) public returns (bool success) {
-        require((amount > 0), "Must get Eth");
+        require((amount > 0), "Must get Asset");
         uint outputToken;
         outputToken = _swapTokenToToken(assetFrom, assetTo, amount);
         require (_transfer(assetTo, msg.sender, outputToken));
@@ -387,25 +387,28 @@ contract MAI is ERC20{
     }
     
     function _swapTokenToToken( address _assetFrom, address _assetTo, uint _amount) internal returns (uint _outputToken){
-          //uint _y; 
-          uint _balanceEth; 
-          //uint _balanceToken; 
+          uint _y; 
+          uint _balanceAsset; 
           uint _balanceMAI;
         if(_assetTo == address(this)) {
-           _balanceEth = mapAsset_ExchangeData[_assetFrom].balanceAsset;
+           _balanceAsset = mapAsset_ExchangeData[_assetFrom].balanceAsset;
            _balanceMAI = mapAsset_ExchangeData[_assetFrom].balanceMAI;
-	        _outputToken = calcCLPSwap(_amount, _balanceEth, _balanceMAI );
+	        _outputToken = calcCLPSwap(_amount, _balanceAsset, _balanceMAI );
             mapAsset_ExchangeData[_assetFrom].balanceAsset += _amount;
             mapAsset_ExchangeData[_assetFrom].balanceMAI -= _outputToken;
          } 
-        //  else {
-        //     require((mapAsset_ExchangeData[_assetFrom].listed),'asset must exist in a pool');
-        //     _balanceEth = mapAsset_ExchangeData[_assetFrom].balanceAsset;
-        //     _balanceMAI = mapAsset_ExchangeData[_assetFrom].balanceMAI;
-        //     _balanceToken = mapAsset_ExchangeData[_assetFrom].balanceAsset;
-        //    	_y = calcCLPSwap(_amount, _balanceEth, _balanceMAI);
-	    //     _outputToken = calcCLPSwap(_y, _balanceMAI, _balanceToken);
-        //  }
+         else {
+             //--swap usd to eth--
+             //send usd and amount
+             //swap usd to mai
+             //swap mai to eth
+             //transfer eth
+            require((mapAsset_ExchangeData[_assetFrom].listed = true),'asset must exist in a pool');
+            _balanceAsset = mapAsset_ExchangeData[_assetFrom].balanceAsset;
+            _balanceMAI = mapAsset_ExchangeData[_assetFrom].balanceMAI;
+           	_y = calcCLPSwap(_amount, _balanceAsset, _balanceMAI);
+	        _outputToken = calcCLPSwap(_y, _balanceMAI, _balanceAsset);
+         }
          emit swapToken( _assetFrom, _assetTo, _amount, _outputToken, msg.sender);
         return _outputToken;
     }

@@ -16,6 +16,7 @@ var acc0; var acc1; var acc2; var acc3;
 var _1 = 1 * 10 ** 18;
 const _1BN = new BigNumber(1 * 10 ** 18)
 var _dot01 = new BigNumber(1 * 10 ** 16)
+var _dot001 = new BigNumber(1 * 10 ** 15)
 const addressETH = "0x0000000000000000000000000000000000000000"
 const etherPool = { "asset": (1 * _dot01).toString(), "mai": (2 * _1).toString() }
 const initialMAI = 4 * _1; const initialETH = 3 * 10 ** 16;
@@ -27,12 +28,16 @@ contract('Liquidity', async accounts => {
   logETH()
   addLiquidityETH(_1BN, _dot01, acc0)
   logETH()
-  swapEtherToMAI( acc0, _dot01)
+  swapAssetToMAI(acc0, _dot01)
+  logETH()
+  addLiquidityUSD(_1BN, _dot01, acc0)
+  logUSD()
+  swapUSDToMAI(acc0, _dot001)
+  logUSD()
+  swapUSDToETH(acc0, _dot001)
   // removeLiquidityETH(10000, acc0)
-  // logETH()
-  // logUSD()
-  // addLiquidityUSD(_1BN, _dot01, acc0)
-  // logUSD()
+   logETH()
+   logUSD()
   // removeLiquidityUSD(10000, acc0)
   // logUSD()
 })
@@ -94,10 +99,22 @@ function removeLiquidityETH(_bp, staker) {
     await _removeLiquidity(addressETH, _bp, staker)
   });
 }
-function swapEtherToMAI( _owner, _amount) {
+function swapAssetToMAI( _owner, _amount) {
   it("tests to swap ether to mai", async () => {
  
     await _swapTokenToToken(addressETH, addressMAI, _owner, _amount)
+  });
+}
+function swapUSDToMAI( _owner, _amount) {
+  it("tests to swap usd to mai", async () => {
+    const addressUSD = instanceUSD.address;
+    await _swapTokenToToken(addressUSD, addressMAI, _owner, _amount)
+  });
+}
+function swapUSDToETH(_owner, _amount) {
+  it("tests to swap usd to eth", async () => {
+    const addressUSD = instanceUSD.address;
+    await _swapTokenToToken(addressUSD, addressETH, _owner, _amount)
   });
 }
 
@@ -131,7 +148,7 @@ async function _addLiquidityToEtherPool(addressPool, amountM, amountA, staker) {
   const balanceA = utils.getBN((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
   const poolUnits = math.calcPoolUnits(amountA, balanceA, amountM, balanceM);
 
-  assert.equal(addMai.logs.length, 2, "3 events was triggered");
+  assert.equal(addMai.logs.length, 2, "2 events was triggered");
   assert.equal(addMai.logs[0].event, "Transfer", "Correct event");
   assert.equal(addMai.logs[1].event, "AddLiquidity", "Correct event");
   assert.equal(addMai.logs[1].args.amountMAI, utils.BN2Str(amountM), " amount mai is correct");
@@ -238,12 +255,14 @@ async function _removeLiquidity(addressPool, _bp, staker) {
 
 }
 
-async function _swapTokenToToken(addressPool, addressMAI, _owner, _amount) {
+async function _swapTokenToToken(addressPool, addressTo, _owner, _amount) {
   await delay(timeDelay)
   let pool_mai_Before;
   let pool_asset_Before;
   var _output; 
   let owner_Mai_Before = utils.getBN(await instanceMAI.balanceOf(_owner));
+
+  
 
   if (await instanceMAI.mapAsset_ExchangeData(addressPool)) {
     pool_mai_Before = utils.getBN((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
@@ -251,14 +270,21 @@ async function _swapTokenToToken(addressPool, addressMAI, _owner, _amount) {
   }
   _output = math.calcCLPSwap(_amount, pool_asset_Before, pool_mai_Before);
 
-  let swapEther = await instanceMAI.swapTokenToToken(addressPool, addressMAI, _amount, {from: _owner});
-  assert.equal(swapEther.logs.length, 2, "2 events was triggered");
-  assert.equal(swapEther.logs[0].event, "swapToken", "Correct event");
-  assert.equal(swapEther.logs[0].args.assetTo, addressMAI, " asset to is correct");
-  assert.equal(swapEther.logs[0].args.inputAsset, utils.BN2Str(_amount), " amount sent is correct");
-  assert.equal(swapEther.logs[0].args.outPutAsset, utils.BN2Str(_output), " output is correct");
-  assert.equal(swapEther.logs[0].args.owner, _owner, " owner is correct");
-  assert.equal(swapEther.logs[1].event, "Transfer", "Correct event");
+  let swapAsset
+  if (addressPool !== addressETH) {
+    await instanceUSD.approve(addressMAI, _amount, { from: _owner })
+    swapAsset = await instanceMAI.swapTokenToToken(addressPool, addressTo, _amount, {from: _owner})
+  } else {
+    swapAsset = await instanceMAI.swapTokenToToken(addressPool, addressTo, _amount, {from: _owner});
+  }
+
+  assert.equal(swapAsset.logs.length, 2, "2 events was triggered");
+  assert.equal(swapAsset.logs[0].event, "swapToken", "Correct event");
+  assert.equal(swapAsset.logs[0].args.assetTo, addressTo, " asset to is correct");
+  assert.equal(swapAsset.logs[0].args.inputAsset, utils.BN2Str(_amount), " amount sent is correct");
+  assert.equal(swapAsset.logs[0].args.outPutAsset, utils.BN2Str(_output), " output is correct");
+  assert.equal(swapAsset.logs[0].args.owner, _owner, " owner is correct");
+  assert.equal(swapAsset.logs[1].event, "Transfer", "Correct event");
 
   //check Ether:MAi balance increase
   const pool_mai_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
