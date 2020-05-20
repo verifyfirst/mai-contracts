@@ -6,7 +6,7 @@ function calcCLPSwap(x, X, Y) {
     const _X = new BigNumber(X)
     const _Y = new BigNumber(Y)
     const numerator = _x.times(_Y).times(_X)
-    const denominator = (_x.plus(_X)).times((_x.plus(_X)))
+    const denominator = (_x.plus(_X)).times(_x.plus(_X))
     const _y = numerator.div(denominator)
     const y = (new BigNumber(_y)).integerValue(1);
     return y;
