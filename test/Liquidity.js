@@ -27,13 +27,14 @@ contract('Liquidity', async accounts => {
   logETH()
   addLiquidityETH(_1BN, _dot01, acc0)
   logETH()
-  removeLiquidityETH(10000, acc0)
-  logETH()
-  logUSD()
-  addLiquidityUSD(_1BN, _dot01, acc0)
-  logUSD()
-  removeLiquidityUSD(10000, acc0)
-  logUSD()
+  swapEtherToMAI( acc0, _dot01)
+  // removeLiquidityETH(10000, acc0)
+  // logETH()
+  // logUSD()
+  // addLiquidityUSD(_1BN, _dot01, acc0)
+  // logUSD()
+  // removeLiquidityUSD(10000, acc0)
+  // logUSD()
 })
 //################################################################
 // CONSTRUCTION
@@ -93,6 +94,12 @@ function removeLiquidityETH(_bp, staker) {
     await _removeLiquidity(addressETH, _bp, staker)
   });
 }
+function swapEtherToMAI( _owner, _amount) {
+  it("tests to swap ether to mai", async () => {
+ 
+    await _swapTokenToToken(addressETH, addressMAI, _owner, _amount)
+  });
+}
 
 async function _addLiquidityToEtherPool(addressPool, amountM, amountA, staker) {
   await delay(timeDelay)
@@ -131,10 +138,10 @@ async function _addLiquidityToEtherPool(addressPool, amountM, amountA, staker) {
   assert.equal(utils.BN2Str(addMai.logs[1].args.unitsIssued), poolUnits, "units is correct");
 
   //check Ether:MAi balance increase
-  const etherPool_mai = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
-  const etherPool_asset = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
-  assert.equal(etherPool_mai, utils.BN2Str(amountM.plus(pool_mai_Before)), " added Mai to Ether:Mai")
-  assert.equal(etherPool_asset, utils.BN2Str(amountA.plus(pool_asset_Before)), " added Ether to Ether:Mai")
+  const pool_mai_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
+  const pool_asset_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
+  assert.equal(pool_mai_After, utils.BN2Str(amountM.plus(pool_mai_Before)), " added Mai to Ether:Mai")
+  assert.equal(pool_asset_After, utils.BN2Str(amountA.plus(pool_asset_Before)), " added Ether to Ether:Mai")
 
   //check staker units
   const stakerUnitsAfter = utils.BN2Str(await instanceMAI.calcStakerUnits(addressPool, staker));
@@ -181,10 +188,10 @@ async function _addLiquidityToAssetPool(addressPool, amountM, amountA, staker) {
   assert.equal(utils.BN2Str(addMai.logs[2].args.unitsIssued), poolUnits, "units is correct");
 
   //check Ether:MAi balance increase
-  const etherPool_mai = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
-  const etherPool_asset = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
-  assert.equal(etherPool_mai, utils.BN2Str(amountM.plus(pool_mai_Before)), " added Mai to Ether:Mai")
-  assert.equal(etherPool_asset, utils.BN2Str(amountA.plus(pool_asset_Before)), " added Ether to Ether:Mai")
+  const pool_mai_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
+  const pool_asset_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
+  assert.equal(pool_mai_After, utils.BN2Str(amountM.plus(pool_mai_Before)), " added Mai to Ether:Mai")
+  assert.equal(pool_asset_After, utils.BN2Str(amountA.plus(pool_asset_Before)), " added Ether to Ether:Mai")
 
   //check staker units
   const stakerUnitsAfter = utils.BN2Str(await instanceMAI.calcStakerUnits(addressPool, staker));
@@ -226,4 +233,42 @@ async function _removeLiquidity(addressPool, _bp, staker) {
   const stakerAddress = (await instanceMAI.calcStakerAddress(addressPool, 0));
   assert.equal(stakerUnits, utils.BN2Str(_stakerUnits.minus(_units)), "staker units is correct")
   assert.equal(stakerAddress, staker, "Staker Address is correct");
+  // const stakerBal = utils.BN2Str(await instanceMAI.balanceOf(staker));
+  // assert.equal(stakerBal, supply, "correct staker bal")
+
 }
+
+async function _swapTokenToToken(addressPool, addressMAI, _owner, _amount) {
+  await delay(timeDelay)
+  let pool_mai_Before;
+  let pool_asset_Before;
+  var _output; 
+  let owner_Mai_Before = utils.getBN(await instanceMAI.balanceOf(_owner));
+
+  if (await instanceMAI.mapAsset_ExchangeData(addressPool)) {
+    pool_mai_Before = utils.getBN((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
+    pool_asset_Before = utils.getBN((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
+  }
+  _output = math.calcCLPSwap(_amount, pool_asset_Before, pool_mai_Before);
+
+  let swapEther = await instanceMAI.swapTokenToToken(addressPool, addressMAI, _amount, {from: _owner});
+  assert.equal(swapEther.logs.length, 2, "2 events was triggered");
+  assert.equal(swapEther.logs[0].event, "swapToken", "Correct event");
+  assert.equal(swapEther.logs[0].args.assetTo, addressMAI, " asset to is correct");
+  assert.equal(swapEther.logs[0].args.inputAsset, utils.BN2Str(_amount), " amount sent is correct");
+  assert.equal(swapEther.logs[0].args.outPutAsset, utils.BN2Str(_output), " output is correct");
+  assert.equal(swapEther.logs[0].args.owner, _owner, " owner is correct");
+  assert.equal(swapEther.logs[1].event, "Transfer", "Correct event");
+
+  //check Ether:MAi balance increase
+  const pool_mai_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceMAI);
+  const pool_asset_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(addressPool)).balanceAsset);
+  assert.equal(pool_mai_After, utils.BN2Str(pool_mai_Before.minus(_output)), " removed Mai from Ether:Mai")
+  assert.equal(pool_asset_After, utils.BN2Str(pool_asset_Before.plus(_amount)), " added Ether to Ether:Mai")
+
+  //check owner balances
+  const owner_Mai_After = utils.BN2Str(await instanceMAI.balanceOf(_owner));
+  assert.equal(owner_Mai_After, utils.BN2Str(owner_Mai_Before.plus(_output)), "correct owner mai bal")
+
+}
+
