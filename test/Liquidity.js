@@ -25,27 +25,27 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 
 contract('Liquidity', async accounts => {
   constructor(accounts)
-  logETH()
+  // logETH()
   addLiquidityETH(_dot01, _dot001, acc0)
-  logETH()
+  // logETH()
   swapETHToMAI(_dot001, acc0)
-  logETH()
+  // logETH()
   swapMAIToETH(_dot01, acc0)
-  logETH()
-  logUSD()
+  // logETH()
+  // logUSD()
   addLiquidityUSD(_dot01, _dot01, acc0)
-  logUSD()
+  // logUSD()
   swapUSDToETH(_dot001, acc0)
-  logUSD()
-  logETH()
+  // logUSD()
+  // logETH()
   swapUSDToMAI(_dot001, acc0)
-  logUSD()
+  // logUSD()
   swapETHToUSD(_dot001, acc0)
   removeLiquidityETH(10000, acc0)
-  logETH()
-  logUSD()
-  removeLiquidityUSD(10000, acc0)
-  logUSD()
+  // logETH()
+  // logUSD()
+  //removeLiquidityUSD(10000, acc0)
+  // logUSD()
 })
 //################################################################
 // CONSTRUCTION
@@ -83,14 +83,14 @@ function logUSD() {
 }
 
 function addLiquidityUSD(amountM, amountA, staker) {
-  it("test addressUSD", async () => {
+  it("test to add liquidity to USD Pool", async () => {
     const addressUSD = instanceUSD.address;
     await _addLiquidityToAssetPool(addressUSD, amountM, amountA, staker)
   })
 
 }
 function addLiquidityETH(amountM, amountA, staker) {
-  it("test addressETH", async () => {
+  it("test to add liquidity to ETH Pool", async () => {
     await _addLiquidityToEtherPool(addressETH, amountM, amountA, staker)
   })
 }
