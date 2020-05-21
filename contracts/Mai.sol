@@ -377,24 +377,20 @@ contract MAI is ERC20{
         return(_outputMAI, _outputAsset);
     }
 
-    function swapTokenToToken(address assetFrom, address assetTo, uint inputAmount, address payable recipient) public returns (bool success) {
+    function swapTokenToToken(address assetFrom, address assetTo, uint inputAmount) public payable returns (bool success) {
         require((inputAmount > 0), "Must get Asset");
         uint maiAmount = 0; uint outputAmount = 0;
-        _handleTransferIn(assetFrom, inputAmount);
-        (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
-        emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, recipient);
-        _handleTransferOut(assetTo, outputAmount, recipient);
-        return true;
-    }
-
-    function _handleTransferIn(address _assetFrom, uint _amount) internal {
-        if(_assetFrom == address(0)){
-            require (msg.value == _amount);
-        } else if (_assetFrom == address(this)){
-            _transfer(msg.sender, address(this), _amount);
+        if(assetFrom == address(0)){
+            require ((msg.value == inputAmount), 'must get ETH');
+        } else if (assetFrom == address(this)){
+            _transfer(msg.sender, address(this), inputAmount); 
         } else {
-            ERC20(_assetFrom).transferFrom(msg.sender, address(this), _amount);
+            ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
         }
+        (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
+        emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
+        _handleTransferOut(assetTo, outputAmount, msg.sender);
+        return true;
     }
 
     function _swapTokenToToken(address _assetFrom, address _assetTo, uint _amount) internal returns(uint _m, uint _y){ 
