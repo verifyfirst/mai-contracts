@@ -370,12 +370,22 @@ async function _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_
     assert.equal(recipient_Mai_After, utils.BN2Str(recipient_Mai_Before.plus(outputAmount)), "correct recipient mai bal")
     assert.equal(pool_mai_After, utils.BN2Str((pool_mai_Before.minus(maiAmount)).plus(outputAmount)), " correct Mai in asset:Mai")
     assert.equal(pool_asset_After, utils.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
-  } else {
+  } else if (assetFrom == addressETH && assetTo == addressUSD){
     let recipient_Asset_After = utils.BN2Str(await instanceUSD.balanceOf(recipient));
     let pool2_mai_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceMAI);
     let pool2_asset_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceAsset);
     assert.equal(utils.roundBN2StrDR((recipient_ETH_After), 2), utils.roundBN2StrDR((recipient_ETH_Before.plus(outputAmount)), 2), "correct recipient asset1 bal")
-    //assert.equal(recipient_Asset_After, utils.BN2Str(recipient_Asset_Before.minus(inputAmount)), "correct recipient asset2 bal")
+    assert.equal(recipient_Asset_After, utils.BN2Str(recipient_Asset_Before.plus(outputAmount)), "correct recipient asset2 bal")
+    assert.equal(pool_mai_After, utils.BN2Str(pool_mai_Before.minus(maiAmount)), " correct Mai in asset:Mai")
+    assert.equal(pool_asset_After, utils.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
+    assert.equal(pool2_mai_After, utils.BN2Str(pool2_mai_Before.plus(maiAmount)), " correct Mai in asset:Mai")
+    assert.equal(pool2_asset_After, utils.BN2Str(pool2_asset_Before.minus(outputAmount)), " correct asset bal in asset:Mai")
+  }else{
+    let recipient_Asset_After = utils.BN2Str(await instanceUSD.balanceOf(recipient));
+    let pool2_mai_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceMAI);
+    let pool2_asset_After = utils.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceAsset);
+    assert.equal(utils.roundBN2StrDR((recipient_ETH_After), 2), utils.roundBN2StrDR((recipient_ETH_Before.plus(outputAmount)), 2), "correct recipient asset1 bal")
+    assert.equal(recipient_Asset_After, utils.BN2Str(recipient_Asset_Before.minus(inputAmount)), "correct recipient asset2 bal")
     assert.equal(pool_mai_After, utils.BN2Str(pool_mai_Before.minus(maiAmount)), " correct Mai in asset:Mai")
     assert.equal(pool_asset_After, utils.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
     assert.equal(pool2_mai_After, utils.BN2Str(pool2_mai_Before.plus(maiAmount)), " correct Mai in asset:Mai")
