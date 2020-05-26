@@ -305,6 +305,7 @@ function liquidateCDP(_acc, _bp) {
   var existingDebt = 0; var existingCollateral = 0; var CDP;
 
   it("Allows liquidation of CDP", async () => {
+    let liquidatorMAIBal_Before = _.BN2Str(await instanceMAI.balanceOf(_acc))
     const CDP = _.BN2Str(await instanceMAI.mapAddress_MemberData.call(_acc))
     existingDebt = _.getBN((await instanceMAI.mapCDP_Data.call(CDP)).debt)
     existingCollateral = _.getBN((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
@@ -336,6 +337,9 @@ function liquidateCDP(_acc, _bp) {
 
       let addressMAIBal = _.BN2Str(await instanceMAI.balanceOf(addressMAI))
       assert.equal(addressMAIBal, _.BN2Str((_.getBN(initialMAI).minus(maiBought))), "correct addressMAIBal bal");
+
+      let liquidatorMAIBal_After = _.BN2Str(await instanceMAI.balanceOf(_acc))
+      assert.equal(liquidatorMAIBal_After, _.BN2Str(fee + liquidatorMAIBal_Before), "correct liquidatorMAIBal");
     
     }
   })
