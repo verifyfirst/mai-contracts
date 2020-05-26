@@ -100,6 +100,7 @@ contract MAI is ERC20{
     event LiquidateCDP(uint CDP, uint time, address liquidator, uint liquidation, uint etherSold, uint maiBought, uint debtDeleted, uint feeClaimed);
     event AddLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsIssued);
     event RemoveLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsClaimed);
+    event Swapped(address assetFrom, address assetTo, uint inputAmount, uint maiAmount, uint outPutAmount, address recipient);
 
     event Testing1 (uint val1);
     event Testing2 (uint val1, uint val2);
@@ -376,25 +377,68 @@ contract MAI is ERC20{
         return(_outputMAI, _outputAsset);
     }
 
-
-    function _swapEtherToToken(address _token, address _owner, uint _amount) internal returns (bool success){
-        require((_amount > 0), "Must get Eth");
-        require((mapAsset_ExchangeData[_token].listed));
-         uint _output; uint _y; uint _balanceEth; uint _balanceToken; uint _balanceMAI;
-        _balanceEth = mapAsset_ExchangeData[_owner].balanceAsset;
-        if(_token == address(this)) {
-           _balanceMAI = mapAsset_ExchangeData[_token].balanceMAI;
-	        _output = calcCLPSwap(_amount, _balanceEth, _balanceMAI );
-         } else {
-            _balanceMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
-            _balanceToken = mapAsset_ExchangeData[_token].balanceAsset;
-           	_y = calcCLPSwap(_amount, _balanceEth, _balanceMAI);
-	        _output = calcCLPSwap(_y, _balanceMAI, _balanceToken);
-         }
-        require (_transfer(_token, _owner, _output));//ERC20
+    function swapTokenToToken(address assetFrom, address assetTo, uint inputAmount) public payable returns (bool success) {
+        require((inputAmount > 0), "Must get Asset");
+        uint maiAmount = 0; uint outputAmount = 0;
+        if(assetFrom == address(0)){
+            require ((msg.value == inputAmount), 'must get ETH');
+        } else if (assetFrom == address(this)){
+            _transfer(msg.sender, address(this), inputAmount); 
+        } else {
+            ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
+        }
+        (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
+        emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
+        _handleTransferOut(assetTo, outputAmount, msg.sender);
         return true;
     }
 
+    function _swapTokenToToken(address _assetFrom, address _assetTo, uint _amount) internal returns(uint _m, uint _y){ 
+        if(_assetFrom == address(this)){
+            _m=0;
+            _y = _swapMaiToAsset(_assetTo, _amount);  
+        }
+        if(_assetTo == address(this)){
+            _m= _swapAssetToMai(_assetFrom, _amount);
+            _y = 0;
+        }
+        if(_assetFrom != address(this) && _assetTo != address(this)){
+            _m = _swapAssetToMai(_assetFrom, _amount);
+            _y = _swapMaiToAsset(_assetTo, _m);
+        }   
+        return (_m, _y);
+    }
+
+        function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
+        uint _X = mapAsset_ExchangeData[_assetTo].balanceMAI;
+        uint _Y = mapAsset_ExchangeData[_assetTo].balanceAsset;
+        // bool listed = getListed(_assetTo);
+        // if(listed){ x = _checkListed(_assetTo, x); }
+        _y = calcCLPSwap(_x, _X, _Y);
+        mapAsset_ExchangeData[_assetTo].balanceMAI += _x;
+        mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
+        return _y;
+    }
+
+    function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
+        uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
+        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
+        _y = calcCLPSwap(_x, _X, _Y);
+        mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
+        mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
+        return _y;
+    }
+
+    function _handleTransferOut(address _assetTo, uint _amount, address payable _recipient) internal {
+        if (_assetTo == address(0)) {
+            _recipient.transfer(_amount);
+            // updateEtherPrice();
+        } else if (_assetTo == address(this)) {
+            transfer(_recipient, _amount);
+        } else {
+            ERC20(_assetTo).transfer(_recipient, _amount);
+        }
+    }
 
     //==================================================================================//
     // Pricing functions
@@ -430,7 +474,6 @@ contract MAI is ERC20{
       function calcMAIPPInUSD(uint amount) public view returns (uint amountBought){
         uint balMAI = mapAsset_ExchangeData[exchangeUSD].balanceMAI;
         uint balanceUSD = mapAsset_ExchangeData[exchangeUSD].balanceAsset;
-
         uint outputUSD = calcCLPSwap(amount, balMAI, balanceUSD);
         return outputUSD;
    }
