@@ -286,8 +286,8 @@ contract MAI is ERC20{
             uint collateral = mapCDP_Data[CDP].collateral;
             uint debt = mapCDP_Data[CDP].debt;
             uint basisPoints = 10000;
-            uint liquidatedCollateral = collateral.div((basisPoints.div(liquidation)));
-            uint debtDeleted = debt.div(basisPoints.div(liquidation));
+            uint liquidatedCollateral = (collateral.mul(liquidation)).div(basisPoints);
+            uint debtDeleted = (debt.mul(liquidation)).div(basisPoints);
             uint maiBought; uint _y = 0;
             (maiBought, _y) = _swapTokenToToken(address(0), address(this), liquidatedCollateral);
             uint fee = maiBought - debtDeleted;

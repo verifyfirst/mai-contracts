@@ -331,7 +331,7 @@ function liquidateCDP(_acc, _bp) {
 
       const finalDebt = utils.BN2Str((await instanceMAI.mapCDP_Data.call(CDP)).debt)
       const finalCollateral = utils.BN2Str((await instanceMAI.mapCDP_Data.call(CDP)).collateral)
-      assert.equal(finalDebt, utils.BN2Str(existingDebt - debtDeleted), "correct final debt");
+      assert.equal(finalDebt, utils.BN2Str(existingDebt.minus(debtDeleted)), "correct final debt");
       assert.equal(utils.roundBN2StrDR((finalCollateral / _1), 3), utils.roundBN2StrDR(((existingCollateral - liquidatedCollateral) / _1), 3), "correct final collateral");
 
 
