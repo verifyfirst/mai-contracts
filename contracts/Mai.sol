@@ -237,9 +237,8 @@ contract MAI is ERC20{
     }
 
     function _manageCDP(address payable _owner, uint _value, uint _collateralisation) internal returns (bool success){
-      uint purchasingPower = calcEtherPPinMAI(_value);//how valuable Ether is in USD
+      uint purchasingPower = calcEtherPPinMAI(_value);//how valuable Ether is in MAI
       uint mintAmount = (purchasingPower.mul(100)).div(_collateralisation);
-      //uint mintAmount = 100000000000;
       uint CDP = mapAddress_MemberData[_owner].CDP;
       if (CDP != 0) {
           mapCDP_Data[CDP].collateral += _value;
@@ -290,13 +289,15 @@ contract MAI is ERC20{
             uint liquidatedCollateral = collateral.div(basisPoints.div(liquidation));
             uint debtDeleted = debt.div(basisPoints.div(liquidation));
             //TODO actually sell it
-            uint maiBought = calcEtherPPinMAI(liquidatedCollateral);
+            uint maiBought; uint _y = 0;
+            (maiBought, _y) = _swapTokenToToken(address(0), address(this), liquidatedCollateral);
+            // uint maiBought = calcEtherPPinMAI(liquidatedCollateral);
             uint fee = maiBought - debtDeleted;
             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
             mapCDP_Data[CDP].debt -= debtDeleted;
             emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
-            //_burn(debtDeleted);
-            //require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
+            _burn(debtDeleted);
+            require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
             return true;
         }   else {
             return false;
@@ -459,7 +460,6 @@ contract MAI is ERC20{
        uint etherPriceInMAI = calcValueInMAI(address(0));
        uint maiPriceInUSD = calcValueInAsset(exchangeUSD);
        uint ethPriceInUSD = maiPriceInUSD.mul(etherPriceInMAI).div(_1);//
-        //emit Testing3(etherPriceInMAI, maiPriceInUSD, ethPriceInUSD);
        return (amount.mul(ethPriceInUSD)).div(_1);
    }
 
@@ -467,7 +467,6 @@ contract MAI is ERC20{
         uint etherBal = mapAsset_ExchangeData[address(0)].balanceAsset;
         uint balMAI = mapAsset_ExchangeData[address(0)].balanceMAI;
         uint outputMAI = calcCLPSwap(amount, etherBal, balMAI);
-       // uint outputUSD = calcMAIPPInUSD(outputMAI);
         return outputMAI;
    }
 

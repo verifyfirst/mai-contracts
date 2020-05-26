@@ -317,7 +317,7 @@ function liquidateCDP(_acc, _bp) {
       const fee = maiBought - debtDeleted
 
       let tx1 = await instanceMAI.liquidateCDP(CDP, _bp, { from: _acc });
-      assert.equal(tx1.logs.length, 1, "Three events were triggered");
+      assert.equal(tx1.logs.length, 3, "Three events were triggered");
       assert.equal(tx1.logs[0].event, "LiquidateCDP", "Correct event");
       assert.equal(utils.roundBN2StrDR(tx1.logs[0].args.etherSold / (_1), 4), utils.roundBN2StrDR(liquidatedCollateral / (_1), 4), "Correct liquidatedCollateral");
       assert.equal(utils.roundBN2StrDR(tx1.logs[0].args.maiBought / (_1), 3), utils.roundBN2StrDR(maiBought / (_1), 3), "Correct maiBought");
