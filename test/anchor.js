@@ -40,11 +40,11 @@ contract('Anchor', function (accounts) {
     swapMAIToETH(_dot001, acc0)
     checkValueAnchors()
     checkMAIPrice()
-    swapETHToUSD(_dot0001, acc0, 0)
+    swapETHToUSD(_dot0001, acc0, 0) // mint/burn
     swapUSDToETH(_dot001, acc0, 1)
     swapUSDToETH(_dot001, acc0, 2)
     swapUSDToMAI(_dot001, acc0, 3)
-    swapMAIToUSD(_dot001, acc0, 4)
+    swapMAIToUSD(_dot001, acc0, 4) // mint/burn
     checkValueAnchors()
     checkMAIPrice()
     
