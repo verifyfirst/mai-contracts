@@ -23,7 +23,7 @@ var _dot001 = new BigNumber(1 * 10 ** 15)
 
 contract('Anchor', function (accounts) {
     constructor(accounts)
-    // addExchange1, 2, 3, 4, 5
+    // addExchange1, 2, 3, 4, 5 (98c, 99c, 1.00, 1.01, 1.02)
     // test calcValueInAsset(usd) for each pool
     // test didn't update price after swapping ETH
     // test did update price after swapping 5 USD
