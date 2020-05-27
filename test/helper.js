@@ -17,11 +17,7 @@ async function calcValueInMai(instance, token) {
   }
   return result.toFixed()
 }
-async function calcValueInAsset() {
-  usdBal = new BigNumber(usdPool.asset)
-  maiBal = new BigNumber(usdPool.mai)
-  return ((_1BN.times(usdBal)).div(maiBal)).toFixed()
-}
+
 async function calcEtherPriceInUSD(instance, amount) {
   const _amount = new BigNumber(amount)
   const etherPriceInMai = new BigNumber(await calcValueInMai(instance, addressETH))
@@ -118,8 +114,6 @@ module.exports = {
   calcEtherPPinMAI: calcEtherPPinMAI
   ,
   calcEtherPriceInUSD: calcEtherPriceInUSD
-  ,
-  calcValueInAsset: calcValueInAsset
   ,
   calcValueInMai: calcValueInMai
   ,

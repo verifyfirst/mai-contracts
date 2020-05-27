@@ -5,7 +5,7 @@ var USD3 = artifacts.require( "./tokenUSD3.sol");
 var USD4 = artifacts.require( "./tokenUSD4.sol");
 var USD5 = artifacts.require( "./tokenUSD5.sol");
 
-const initialETH = 3 * 10 ** 16; //0.04
+const initialETH = 3 * 10 ** 16; //0.03
 
 module.exports = async() => {
     const usd1 = await USD1.new();
