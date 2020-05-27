@@ -20,20 +20,15 @@ var _1 = 1 * 10 ** 18;
 const _1BN = new BigNumber(1 * 10 ** 18)
 var _dot1 = new BigNumber(1 * 10 ** 17)
 
-var price1 = _dot1.plus(new BigNumber(2 * 10 ** 15))
-var price2 = _dot1.plus(new BigNumber(1 * 10 ** 15))
-var price3 = _dot1
-var price4 = _dot1.minus(new BigNumber(1 * 10 ** 15))
-var price5 = _dot1.minus(new BigNumber(2 * 10 ** 15))
 const addressETH = "0x0000000000000000000000000000000000000000"
 var _dot01 = new BigNumber(1 * 10 ** 16)
 var _dot001 = new BigNumber(1 * 10 ** 15)
 var _dot0001 = new BigNumber(1 * 10 ** 14)
-const usd1 = { "asset": (1 * price1).toString(), "mai": (1 * _dot1).toString() }
-const usd2 = { "asset": (1 * price2).toString(), "mai": (1 * _dot1).toString() }
-const usd3 = { "asset": (1 * price3).toString(), "mai": (1 * _dot1).toString() }
-const usd4 = { "asset": (1 * price4).toString(), "mai": (1 * _dot1).toString() }
-const usd5 = { "asset": (1 * price5).toString(), "mai": (1 * _dot1).toString() }
+const usd1 = { "asset": (_dot1 * 1.05).toString(), "mai": (1 * _dot1).toString() }
+const usd2 = { "asset": (_dot1 * 1.03).toString(), "mai": (1 * _dot1).toString() }
+const usd3 = { "asset": (_dot1 * 1).toString(), "mai": (1 * _dot1).toString() }
+const usd4 = { "asset": (_dot1 * 0.98).toString(), "mai": (1 * _dot1).toString() }
+const usd5 = { "asset": (_dot1 * 0.90).toString(), "mai": (1 * _dot1).toString() }
 
 
 contract('Anchor', function (accounts) {
@@ -43,6 +38,8 @@ contract('Anchor', function (accounts) {
     checkMAIPrice()
     swapETHToMAI(_dot0001, acc0)
     swapMAIToETH(_dot0001, acc0)
+    checkValueAnchors()
+    checkMAIPrice()
     swapETHToUSD(_dot0001, acc0, 0)
     swapUSDToETH(_dot0001, acc0, 1)
     swapUSDToETH(_dot0001, acc0, 2)
@@ -119,14 +116,14 @@ contract('Anchor', function (accounts) {
     for(var i = 0; i < 5; i++){
       const usdAddress = arrayInstAnchor[i].address;
       const usd1Value = _.BN2Str((await instanceMAI.calcValueInAsset(usdAddress)))
-      console.log(usd1Value/_1)
+      console.log("USD",i+1, ":", _.roundBN2StrDR((usd1Value/_1),3))
     }
   });
   }
  function checkMAIPrice(){
     it("tests to get MAI price", async () => {
     await instanceMAI.updatePrice();
-     console.log(_.BN2Str(await instanceMAI.medianMAIPrice()/_1))
+     console.log('Mai Price: ',_.roundBN2StrDR((await instanceMAI.medianMAIPrice()/_1),2))
     })
   }
 
