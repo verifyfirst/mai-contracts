@@ -512,13 +512,6 @@ contract MAI is ERC20{
         return outputMAI;
    }
 
-//       function calcMAIPPInUSD(uint amount) public view returns (uint amountBought){
-//         uint balMAI = mapAsset_ExchangeData[exchangeUSD].balanceMAI;
-//         uint balanceUSD = mapAsset_ExchangeData[exchangeUSD].balanceAsset;
-//         uint outputUSD = calcCLPSwap(amount, balMAI, balanceUSD);
-//         return outputUSD;
-//    }
-
    function checkLiquidationPoint(uint CDP) public view returns (bool canLiquidate){
         uint collateral = mapCDP_Data[CDP].collateral;
         uint debt = mapCDP_Data[CDP].debt;
