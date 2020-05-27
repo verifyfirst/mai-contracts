@@ -123,7 +123,7 @@ contract('Anchor', function (accounts) {
  function checkMAIPrice(){
     it("tests to get MAI price", async () => {
     await instanceMAI.updatePrice();
-     console.log('Mai Price: ',_.roundBN2StrDR((await instanceMAI.medianMAIPrice()/_1),2))
+     console.log('Mai Price: ',_.roundBN2StrDR((await instanceMAI.medianMAIValue()/_1),2))
     })
   }
 
