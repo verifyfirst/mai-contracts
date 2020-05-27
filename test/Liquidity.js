@@ -44,7 +44,7 @@ contract('Liquidity', async accounts => {
   removeLiquidityETH(10000, acc0)
   // logETH()
   // logUSD()
-  //removeLiquidityUSD(10000, acc0)
+  removeLiquidityUSD(10000, acc0)
   // logUSD()
 })
 //################################################################

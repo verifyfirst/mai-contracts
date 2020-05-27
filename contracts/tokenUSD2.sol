@@ -60,7 +60,7 @@ library SafeMath {
 }
 
 // Token Contract
-contract tokenUSD is ERC20 {
+contract tokenUSD2 is ERC20 {
 
     using SafeMath for uint256;
 

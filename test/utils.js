@@ -21,7 +21,7 @@ function ETH01(x) {
   return new BigNumber(x * 10 ** 16);
 }
 function ETH001(x) {
-  return new BigNumber(x * 10 ** 14);
+  return new BigNumber(x * 10 ** 15);
 }
 function floorBN(BN){
   return (new BigNumber(BN)).integerValue(1)
