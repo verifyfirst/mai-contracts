@@ -115,7 +115,7 @@ contract('Anchor', function (accounts) {
     it("constructor events", async () => {
     for(var i = 0; i < 5; i++){
       const usdAddress = arrayInstAnchor[i].address;
-      const usd1Value = _.BN2Str((await instanceMAI.calcValueInAsset(usdAddress)))
+      const usdValueC = _.BN2Str((await instanceMAI.calcValueInAsset(usdAddress)))
       console.log("USD",i+1, ":", _.roundBN2StrDR((usd1Value/_1),3))
     }
   });
