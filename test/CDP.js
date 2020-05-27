@@ -1,4 +1,3 @@
-
 const assert = require("chai").assert;
 const truffleAssert = require('truffle-assertions');
 var BigNumber = require('bignumber.js');

@@ -59,7 +59,8 @@ contract MAI is ERC20{
     uint public minCollaterisation;
     uint public defaultCollateralisation;
     uint public etherPrice;
-    address exchangeUSD;
+    uint public medianMAIPrice;
+    address[5] public arrayAnchor;
     uint public mintedMAI;
     uint public pooledMAI;
 
@@ -83,6 +84,7 @@ contract MAI is ERC20{
 
      struct ExchangeData {
         bool listed;
+        bool isAnchor;
         uint balanceMAI;
         uint balanceAsset;
         address[] stakers;
@@ -152,11 +154,15 @@ contract MAI is ERC20{
         return true;
     }
 
-    constructor (address assetUSD) public payable {
+    constructor (address assetUSD1, address assetUSD2,
+        address assetUSD3, address assetUSD4, address assetUSD5) public payable {
+
         notEntered = true;
         defaultCollateralisation = 150;
         minCollaterisation = 101;
-        exchangeUSD = assetUSD;
+        arrayAnchor[0] = assetUSD1; arrayAnchor[1] = assetUSD2;
+        arrayAnchor[2] = assetUSD3; arrayAnchor[3] = assetUSD4; arrayAnchor[4] = assetUSD5;
+        medianMAIPrice = _1;
         // Construct with 3 Eth 
         // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
         // 1 Eth + 200 MAI in address(0) pool
@@ -389,6 +395,7 @@ contract MAI is ERC20{
         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
         _handleTransferOut(assetTo, outputAmount, msg.sender);
+        _checkAnchor(assetFrom, assetTo);
         return true;
     }
 
@@ -408,7 +415,44 @@ contract MAI is ERC20{
         return (_m, _y);
     }
 
-        function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
+    function _checkAnchor(address _assetFrom, address _assetTo) internal {
+        address anchor = address(0);
+        if(mapAsset_ExchangeData[_assetFrom].isAnchor){
+            anchor = _assetFrom;
+        } else if (mapAsset_ExchangeData[_assetTo].isAnchor) {
+            anchor = _assetTo;
+        }
+        if(anchor != address(0)){
+            // 1) Mint/Burn based on price diff
+            updatePrice();
+        }
+    }
+
+    function updatePrice() public {
+        uint[5] memory arrayPrices;
+        for(uint i = 0; i < 5; i++){
+            arrayPrices[i] = (calcValueInAsset(arrayAnchor[i]));
+        }
+        uint[5] memory sortedPriceFeed = _sortArray(arrayPrices);
+        medianMAIPrice = sortedPriceFeed[2];
+    }
+
+    function _sortArray(uint[5] memory array) internal pure returns (uint[5] memory) {
+        uint l = array.length;
+        for(uint i = 0; i < l; i++) {
+            for(uint j = i+1; j < l ;j++) {
+                if(array[i] > array[j]) {
+                    uint temp = array[i];
+                    array[i] = array[j];
+                    array[j] = temp;
+                }
+            }
+        }
+        return array;
+    }
+
+
+    function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
         uint _X = mapAsset_ExchangeData[_assetTo].balanceMAI;
         uint _Y = mapAsset_ExchangeData[_assetTo].balanceAsset;
         // bool listed = getListed(_assetTo);
@@ -456,8 +500,8 @@ contract MAI is ERC20{
 
    function calcEtherPriceInUSD(uint amount) public view returns (uint amountBought){
        uint etherPriceInMAI = calcValueInMAI(address(0));
-       uint maiPriceInUSD = calcValueInAsset(exchangeUSD);
-       uint ethPriceInUSD = maiPriceInUSD.mul(etherPriceInMAI).div(_1);//
+    //    uint maiPriceInUSD = calcValueInAsset(exchangeUSD);
+       uint ethPriceInUSD = medianMAIPrice.mul(etherPriceInMAI).div(_1);//
        return (amount.mul(ethPriceInUSD)).div(_1);
    }
 
@@ -468,12 +512,12 @@ contract MAI is ERC20{
         return outputMAI;
    }
 
-      function calcMAIPPInUSD(uint amount) public view returns (uint amountBought){
-        uint balMAI = mapAsset_ExchangeData[exchangeUSD].balanceMAI;
-        uint balanceUSD = mapAsset_ExchangeData[exchangeUSD].balanceAsset;
-        uint outputUSD = calcCLPSwap(amount, balMAI, balanceUSD);
-        return outputUSD;
-   }
+//       function calcMAIPPInUSD(uint amount) public view returns (uint amountBought){
+//         uint balMAI = mapAsset_ExchangeData[exchangeUSD].balanceMAI;
+//         uint balanceUSD = mapAsset_ExchangeData[exchangeUSD].balanceAsset;
+//         uint outputUSD = calcCLPSwap(amount, balMAI, balanceUSD);
+//         return outputUSD;
+//    }
 
    function checkLiquidationPoint(uint CDP) public view returns (bool canLiquidate){
         uint collateral = mapCDP_Data[CDP].collateral;
