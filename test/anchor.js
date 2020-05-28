@@ -67,7 +67,6 @@ contract('Anchor', function (accounts) {
     // swapUSDToETH(_dot001, acc0, 0)
     // checkValueAnchors()
     // checkMAIPrice()
-
     //TODO == swapUSDtoUSD
     
   })
