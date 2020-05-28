@@ -181,6 +181,13 @@ contract MAI is ERC20{
         mapCDP_Data[CDP].debt = mintAmount;
         mapCDP_Data[CDP].owner = address(0);
         mapAsset_ExchangeData[address(0)].listed = true;
+        mapAsset_ExchangeData[assetUSD1].isAnchor = true;
+        mapAsset_ExchangeData[assetUSD2].isAnchor = true;
+        mapAsset_ExchangeData[assetUSD3].isAnchor = true;
+        mapAsset_ExchangeData[assetUSD4].isAnchor = true;
+        mapAsset_ExchangeData[assetUSD5].isAnchor = true;
+           
+
         exchanges.push(address(0));
 
         _transfer(address(this), msg.sender, purchasingPower);
@@ -393,6 +400,7 @@ contract MAI is ERC20{
         } else {
             ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
         }
+        
         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
         _handleTransferOut(assetTo, outputAmount, msg.sender);
@@ -416,6 +424,26 @@ contract MAI is ERC20{
         return (_m, _y);
     }
 
+    function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
+        uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
+        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
+        _y = calcCLPSwap(_x, _X, _Y);
+        mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
+        mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
+        return _y;
+    }
+
+    function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
+        uint _X = mapAsset_ExchangeData[_assetTo].balanceMAI;
+        uint _Y = mapAsset_ExchangeData[_assetTo].balanceAsset;
+        if(mapAsset_ExchangeData[_assetTo].isAnchor){
+         _x = _adjustAmountIfAnchor(_assetTo, _x);
+        }
+         _y = calcCLPSwap(_x, _X, _Y);
+        mapAsset_ExchangeData[_assetTo].balanceMAI += _x;
+        mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
+        return _y;
+    }
     function _checkAnchor(address _assetFrom, address _assetTo) internal {
         address anchor = address(0);
         if(mapAsset_ExchangeData[_assetFrom].isAnchor){
@@ -451,47 +479,26 @@ contract MAI is ERC20{
         return array;
     }
 
-
-    function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
-        uint _X = mapAsset_ExchangeData[_assetTo].balanceMAI;
-        uint _Y = mapAsset_ExchangeData[_assetTo].balanceAsset;
-        _x = _adjustAmountIfAnchor(_assetTo, _x);
-        _y = calcCLPSwap(_x, _X, _Y);
-        mapAsset_ExchangeData[_assetTo].balanceMAI += _x;
-        mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
-        return _y;
-    }
-
-    function _adjustAmountIfAnchor(address _assetTo, uint _amount) internal returns (uint _x){
-        uint maiValueInAsset = calcValueInAsset(_assetTo);
+    function _adjustAmountIfAnchor(address _asset, uint _amount) internal returns (uint _x){
+        uint maiValueInAsset = calcValueInAsset(_asset);
         uint delta;
         if(maiValueInAsset < medianMAIValue){
             delta = (medianMAIValue.sub(maiValueInAsset)).div(incentiveFactor);
-            uint burn = _amount.mul(delta).div(medianMAIValue);
-            _burn(burn);
-            return _amount.sub(burn);
+            uint burn = (_amount.mul(delta)).div(medianMAIValue);
+             _burn(burn);
+             _x = _amount.sub(burn);
         }
-        if(maiValueInAsset > medianMAIValue){
+        if (maiValueInAsset > medianMAIValue){
             delta = (maiValueInAsset.sub(medianMAIValue)).div(incentiveFactor);
-            uint mint = _amount.mul(delta).div(medianMAIValue);
-            _mint(mint);
-            return _amount.add(mint);
-        }
+            uint mint = (_amount.mul(delta)).div(medianMAIValue);
+             _mint(mint);
+             _x = _amount.add(mint);
+        }    
+        return _x;
     }
-
-    function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
-        uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
-        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
-        _y = calcCLPSwap(_x, _X, _Y);
-        mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
-        mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
-        return _y;
-    }
-
     function _handleTransferOut(address _assetTo, uint _amount, address payable _recipient) internal {
         if (_assetTo == address(0)) {
             _recipient.transfer(_amount);
-            // updateEtherPrice();
         } else if (_assetTo == address(this)) {
             transfer(_recipient, _amount);
         } else {
