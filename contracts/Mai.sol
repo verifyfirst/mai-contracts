@@ -64,7 +64,7 @@ contract MAI is ERC20{
     uint public mintedMAI;
     uint public pooledMAI;
     uint public incentiveFactor = 10;
-
+    uint public anchorLimit = 91;
     mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
@@ -104,10 +104,6 @@ contract MAI is ERC20{
     event AddLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsIssued);
     event RemoveLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsClaimed);
     event Swapped(address assetFrom, address assetTo, uint inputAmount, uint maiAmount, uint outPutAmount, address recipient);
-
-    event Testing1 (uint val1);
-    event Testing2 (uint val1, uint val2);
-    event Testing3 (uint val1, uint val2, uint val3);
 
     function transfer(address to, uint amount) public override  returns (bool success) {
         _transfer(msg.sender, to, amount);
@@ -199,7 +195,7 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
         mapAsset_ExchangeData[asset].listed = true;
-    
+        _addLiquidity(asset, amountAsset, amountMAI);
         exchanges.push(asset);
         return true;
     }
@@ -438,7 +434,7 @@ contract MAI is ERC20{
     }
 
     //======================================================================
-    
+    //Anchors
     function addAnchor(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
         require((arrayAnchor.length < 5), "must only have 5 anchors");
         if(!mapAsset_ExchangeData[asset].isAnchor){
@@ -448,27 +444,45 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
         mapAsset_ExchangeData[asset].listed = true;
         mapAsset_ExchangeData[asset].isAnchor = true;
+        _addLiquidity(asset, amountAsset, amountMAI);
         arrayAnchor.push(asset);
         exchanges.push(asset);
         }
         return true;
     }
-    // function removeAnchor(address asset) public returns (bool success){
-    //     uint assetValue = calcValueInAsset(asset);
-    //     uint delta = (medianMAIValue.sub(assetValue)).div(100);
-    //     require((assetValue ), "must only have 5 anchors");
-    //     if(!mapAsset_ExchangeData[asset].isAnchor){
-    //     require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
-    //     ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
-    //     mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
-    //     mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
-    //     mapAsset_ExchangeData[asset].listed = true;
-    //     mapAsset_ExchangeData[asset].isAnchor = true;
-    //     arrayAnchor.push(asset);
-    //     exchanges.push(asset);
+    function removeAnchor(address asset) public returns (bool success){
+        require((mapAsset_ExchangeData[asset].isAnchor = true), "must be an anchor");
+        uint assetValue = calcValueInMAI(asset);
+        uint multiplier = 100;
+        uint delta = (assetValue.div(medianMAIValue).mul(multiplier));
+        require((delta < anchorLimit), "must be less than anchor limit ");
+        for (uint i=0; i < 5; i++) {
+             if (arrayAnchor[i] == asset){
+                 _removeFromArray(i, arrayAnchor);
+                }
+        }
+        //_nukeAnchor(asset); 
+        updatePrice();           
+        return true;
+    }
+     function _removeFromArray(uint index, address[] storage array) internal returns (address[] storage ) {
+        array[index] = array[array.length - 1];
+        array.pop();
+        return array;
+    }
+  
+    // function _nukeAnchor(address _asset) internal returns (bool success){
+    //      uint _outputMAI; uint _outputAsset; uint _bp = 10000;
+    //     for(uint i = 0; i < mapAsset_ExchangeData[_asset].stakers[].length; i++){
+    //     (_outputMAI, _outputAsset) = _removeLiquidity(_asset, _bp);
+    //     ERC20(_asset).transfer(mapAsset_ExchangeData[_asset].stakers[i], _outputAsset);
+    //     require (_transfer(address(this), mapAsset_ExchangeData[_asset].stakers[i], _outputMAI));
     //     }
-    //     return true;
+        
+        
+    //     mapAsset_ExchangeData[asset].isAnchor = false;
     // }
+
     function _checkAnchor(address _assetFrom, address _assetTo) internal {
         address anchor = address(0);
         if(mapAsset_ExchangeData[_assetFrom].isAnchor){

@@ -132,10 +132,11 @@ await instanceMAI.addAnchor(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from
  function checkValueAnchors(){
     it("constructor events", async () => {
     for(var i = 0; i < 5; i++){
+      const usdName = await arrayInstAnchor[i].name();
       const usdAddress = arrayInstAnchor[i].address;
       const usdValue = _.BN2Str((await instanceMAI.calcValueInAsset(usdAddress)))
       arrayPrices.push(usdValue);
-      console.log("USD",i+1, ":", _.BN2Str(usdValue/_1))
+      console.log(usdName,":", _.BN2Str(usdValue/_1))
     }
   });
   }
@@ -329,7 +330,7 @@ await instanceMAI.addAnchor(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from
       assert.equal(_.roundBN2StrD(recipient_Asset_After), _.roundBN2StrD(recipient_Asset_Before.plus(outputAmount)), "correct recipient asset2 bal")
       assert.equal(_.roundBN2StrD(pool_mai_After), _.roundBN2StrD(pool_mai_Before.minus(maiAmount)), " correct Mai in asset:Mai")
       assert.equal(pool_asset_After, _.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
-      assert.equal(pool2_mai_After, _.BN2Str(_.floorBN(pool2_mai_Before.plus(maiAmount).plus(mint))), " correct Mai in asset:Mai")
+      assert.equal(_.roundBN2StrD(pool2_mai_After), _.roundBN2StrD(pool2_mai_Before.plus(maiAmount).plus(mint)), " correct Mai in asset:Mai")
       assert.equal(_.roundBN2StrD(pool2_asset_After), _.roundBN2StrD(pool2_asset_Before.minus(outputAmount)), " correct asset bal in asset:Mai")
     }
     else if(assetFrom == addressMAI && assetTo !== addressETH){
