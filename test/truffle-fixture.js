@@ -4,6 +4,7 @@ var USD2 = artifacts.require( "./tokenUSD2.sol");
 var USD3 = artifacts.require( "./tokenUSD3.sol");
 var USD4 = artifacts.require( "./tokenUSD4.sol");
 var USD5 = artifacts.require( "./tokenUSD5.sol");
+var USD6 = artifacts.require( "./tokenUSD6.sol");
 
 const initialETH = 3 * 10 ** 17; //3
 
@@ -18,8 +19,9 @@ module.exports = async() => {
     USD4.setAsDeployed(usd4)
     const usd5 = await USD5.new();
     USD5.setAsDeployed(usd5)
-    const mai = await MAI.new(usd1.address, usd2.address, usd3.address,
-        usd4.address, usd5.address, { value: initialETH});
+    const usd6 = await USD6.new();
+    USD6.setAsDeployed(usd6)
+    const mai = await MAI.new({ value: initialETH});
     MAI.setAsDeployed(mai)
     // console.log(usd1.address, usd2.address, usd3.address,
     //     usd4.address, usd5.address)

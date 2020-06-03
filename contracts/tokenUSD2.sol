@@ -81,7 +81,7 @@ contract tokenUSD2 is ERC20 {
     // Minting event
     constructor() public{
         balanceOf[msg.sender] = totalSupply;
-        name = "TokenUSD";
+        name = "USD2";
         symbol  = "tUSD";
         emit Transfer(address(0), msg.sender, totalSupply);
     }

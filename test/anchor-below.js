@@ -107,33 +107,23 @@ contract('Anchor', function (accounts) {
 
       instanceMAI = await MAI.deployed();
       addressMAI = instanceMAI.address;
-     
-      const anchor1 = await instanceMAI.arrayAnchor(0)
-      assert.equal(anchor1, arrayAddrAnchor[0], "address is correct")
-      const anchor2 = await instanceMAI.arrayAnchor(1)
-      assert.equal(anchor2, arrayAddrAnchor[1], "address is correct")
-      const anchor3 = await instanceMAI.arrayAnchor(2)
-      assert.equal(anchor3, arrayAddrAnchor[2], "address is correct")
-      const anchor4 = await instanceMAI.arrayAnchor(3)
-      assert.equal(anchor4, arrayAddrAnchor[3], "address is correct")
-      const anchor5 = await instanceMAI.arrayAnchor(4)
-      assert.equal(anchor5, arrayAddrAnchor[4], "address is correct")
+
 ///Add anchor exchanges
-      await instanceMAI.approve(addressMAI, (usd1.mai), { from: acc0 })
-      await arrayInstAnchor[0].approve(addressMAI, (usd1.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[0], (usd1.asset), (usd1.mai), { from: acc0 })
-      await instanceMAI.approve(addressMAI, (usd2.mai), { from: acc0 })
-      await arrayInstAnchor[1].approve(addressMAI, (usd2.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[1], (usd2.asset), (usd2.mai), { from: acc0 })
-      await instanceMAI.approve(addressMAI, (usd3.mai), { from: acc0 })
-      await arrayInstAnchor[2].approve(addressMAI, (usd3.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[2], (usd3.asset), (usd3.mai), { from: acc0 })
-      await instanceMAI.approve(addressMAI, (usd4.mai), { from: acc0 })
-      await arrayInstAnchor[3].approve(addressMAI, (usd4.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[3], (usd4.asset), (usd4.mai), { from: acc0 })
-      await instanceMAI.approve(addressMAI, (usd5.mai), { from: acc0 })
-      await arrayInstAnchor[4].approve(addressMAI, (usd5.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from: acc0 })
+await instanceMAI.approve(addressMAI, (usd1.mai), { from: acc0 })
+await arrayInstAnchor[0].approve(addressMAI, (usd1.asset), { from: acc0 })
+await instanceMAI.addAnchor(arrayAddrAnchor[0], (usd1.asset), (usd1.mai), { from: acc0 })
+await instanceMAI.approve(addressMAI, (usd2.mai), { from: acc0 })
+await arrayInstAnchor[1].approve(addressMAI, (usd2.asset), { from: acc0 })
+await instanceMAI.addAnchor(arrayAddrAnchor[1], (usd2.asset), (usd2.mai), { from: acc0 })
+await instanceMAI.approve(addressMAI, (usd3.mai), { from: acc0 })
+await arrayInstAnchor[2].approve(addressMAI, (usd3.asset), { from: acc0 })
+await instanceMAI.addAnchor(arrayAddrAnchor[2], (usd3.asset), (usd3.mai), { from: acc0 })
+await instanceMAI.approve(addressMAI, (usd4.mai), { from: acc0 })
+await arrayInstAnchor[3].approve(addressMAI, (usd4.asset), { from: acc0 })
+await instanceMAI.addAnchor(arrayAddrAnchor[3], (usd4.asset), (usd4.mai), { from: acc0 })
+await instanceMAI.approve(addressMAI, (usd5.mai), { from: acc0 })
+await arrayInstAnchor[4].approve(addressMAI, (usd5.asset), { from: acc0 })
+await instanceMAI.addAnchor(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from: acc0 })
      
     });
   

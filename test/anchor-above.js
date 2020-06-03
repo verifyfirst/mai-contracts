@@ -12,6 +12,7 @@ var USD2 = artifacts.require( "./tokenUSD2.sol");
 var USD3 = artifacts.require( "./tokenUSD3.sol");
 var USD4 = artifacts.require( "./tokenUSD4.sol");
 var USD5 = artifacts.require( "./tokenUSD5.sol");
+var USD6 = artifacts.require( "./tokenUSD6.sol");
 
 var arrayInstAnchor = []; var arrayAddrAnchor = []; 
 var medianMAIValue;
@@ -32,6 +33,7 @@ const usd2 = { "asset": (_dot1 * 1.01).toString(), "mai": (1 * _dot1).toString()
 const usd3 = { "asset": (_dot1 * 1).toString(), "mai": (1 * _dot1).toString() }
 const usd4 = { "asset": (_dot1 * 0.98).toString(), "mai": (1 * _dot1).toString() }
 const usd5 = { "asset": (_dot1 * 0.97).toString(), "mai": (1 * _dot1).toString() }
+const usd6 = { "asset": (_dot1 * 0.99).toString(), "mai": (1 * _dot1).toString() }
 
 var mint;
 var burn;
@@ -42,6 +44,9 @@ contract('Anchor', function (accounts) {
     checkValueAnchors()            //===Median price no change
     checkMAIPrice()
 
+    // addAnchor()
+    // checkValueAnchors()            //===Median price no change
+    // checkMAIPrice()
     swapETHToMAI(_dot001, acc0)    //===Median price no change 
     checkValueAnchors()            
     checkMAIPrice()
@@ -104,61 +109,63 @@ contract('Anchor', function (accounts) {
         var addressUSD5 = instanceUSD5.address;
         arrayInstAnchor.push(instanceUSD5)
         arrayAddrAnchor.push(addressUSD5)
+        var instanceUSD6 = await USD6.deployed();
+        var addressUSD6 = instanceUSD6.address;
+        arrayInstAnchor.push(instanceUSD6)
+        arrayAddrAnchor.push(addressUSD6)
 
       instanceMAI = await MAI.deployed();
       addressMAI = instanceMAI.address;
      
-      const anchor1 = await instanceMAI.arrayAnchor(0)
-      assert.equal(anchor1, arrayAddrAnchor[0], "address is correct")
-      const anchor2 = await instanceMAI.arrayAnchor(1)
-      assert.equal(anchor2, arrayAddrAnchor[1], "address is correct")
-      const anchor3 = await instanceMAI.arrayAnchor(2)
-      assert.equal(anchor3, arrayAddrAnchor[2], "address is correct")
-      const anchor4 = await instanceMAI.arrayAnchor(3)
-      assert.equal(anchor4, arrayAddrAnchor[3], "address is correct")
-      const anchor5 = await instanceMAI.arrayAnchor(4)
-      assert.equal(anchor5, arrayAddrAnchor[4], "address is correct")
 ///Add anchor exchanges
       await instanceMAI.approve(addressMAI, (usd1.mai), { from: acc0 })
       await arrayInstAnchor[0].approve(addressMAI, (usd1.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[0], (usd1.asset), (usd1.mai), { from: acc0 })
+      await instanceMAI.addAnchor(arrayAddrAnchor[0], (usd1.asset), (usd1.mai), { from: acc0 })
       await instanceMAI.approve(addressMAI, (usd2.mai), { from: acc0 })
       await arrayInstAnchor[1].approve(addressMAI, (usd2.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[1], (usd2.asset), (usd2.mai), { from: acc0 })
+      await instanceMAI.addAnchor(arrayAddrAnchor[1], (usd2.asset), (usd2.mai), { from: acc0 })
       await instanceMAI.approve(addressMAI, (usd3.mai), { from: acc0 })
       await arrayInstAnchor[2].approve(addressMAI, (usd3.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[2], (usd3.asset), (usd3.mai), { from: acc0 })
+      await instanceMAI.addAnchor(arrayAddrAnchor[2], (usd3.asset), (usd3.mai), { from: acc0 })
       await instanceMAI.approve(addressMAI, (usd4.mai), { from: acc0 })
       await arrayInstAnchor[3].approve(addressMAI, (usd4.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[3], (usd4.asset), (usd4.mai), { from: acc0 })
+      await instanceMAI.addAnchor(arrayAddrAnchor[3], (usd4.asset), (usd4.mai), { from: acc0 })
       await instanceMAI.approve(addressMAI, (usd5.mai), { from: acc0 })
       await arrayInstAnchor[4].approve(addressMAI, (usd5.asset), { from: acc0 })
-      await instanceMAI.addExchange(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from: acc0 })
+      await instanceMAI.addAnchor(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from: acc0 })
      
     });
 
   }
+function addAnchor(){
+  it("adds 6 usd", async () => {
+      await instanceMAI.approve(addressMAI, (usd6.mai), { from: acc0 })
+      await arrayInstAnchor[5].approve(addressMAI, (usd6.asset), { from: acc0 })
+      await instanceMAI.addAnchor(arrayAddrAnchor[5], (usd6.asset), (usd6.mai), { from: acc0 })
+    });
+}
 
  function checkValueAnchors(){
     it("constructor events", async () => {
     for(var i = 0; i < 5; i++){
       const usdAddress = arrayInstAnchor[i].address;
+      const usdName = await arrayInstAnchor[i].name();
       const usdValue = _.BN2Str((await instanceMAI.calcValueInAsset(usdAddress)))
       arrayPrices.push(usdValue);
-      console.log("USD",i+1, ":", _.BN2Str(usdValue/_1))
+      console.log(usdName, ":", _.BN2Str(usdValue/_1))
     }
   });
   }
  function checkMAIPrice(){
     it("tests MAI price matches", async () => {
     await instanceMAI.updatePrice();
-    var arrayPrices=[];
+    var arrayPri=[];
     for(var i = 0; i < 5; i++){
       const usdAddress = arrayInstAnchor[i].address;
-        arrayPrices[i] = (await help.calcValueInAsset(instanceMAI, usdAddress));
+      arrayPri[i] = (await help.calcValueInAsset(instanceMAI, usdAddress));
     }
     var  sortedPriceFeed = [];
-    sortedPriceFeed = _sortArray(arrayPrices);
+    sortedPriceFeed = _sortArray(arrayPri);
     medianMAIValue = _.floorBN(sortedPriceFeed[2]);
     var medianMAI = _.BN2Str(await instanceMAI.medianMAIValue())
     assert.equal(medianMAI, medianMAIValue, "prices match")

@@ -60,7 +60,7 @@ contract MAI is ERC20{
     uint public defaultCollateralisation;
     uint public etherPrice;
     uint public medianMAIValue;
-    address[5] public arrayAnchor;
+    address[] public arrayAnchor;
     uint public mintedMAI;
     uint public pooledMAI;
     uint public incentiveFactor = 10;
@@ -155,14 +155,12 @@ contract MAI is ERC20{
         return true;
     }
 
-    constructor (address assetUSD1, address assetUSD2,
-        address assetUSD3, address assetUSD4, address assetUSD5) public payable {
+    constructor () public payable {
 
         notEntered = true;
         defaultCollateralisation = 150;
         minCollaterisation = 101;
-        arrayAnchor[0] = assetUSD1; arrayAnchor[1] = assetUSD2;
-        arrayAnchor[2] = assetUSD3; arrayAnchor[3] = assetUSD4; arrayAnchor[4] = assetUSD5;
+      
         medianMAIValue = _1;
         // Construct with 3 Eth 
         // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
@@ -181,13 +179,6 @@ contract MAI is ERC20{
         mapCDP_Data[CDP].debt = mintAmount;
         mapCDP_Data[CDP].owner = address(0);
         mapAsset_ExchangeData[address(0)].listed = true;
-        mapAsset_ExchangeData[assetUSD1].isAnchor = true;
-        mapAsset_ExchangeData[assetUSD2].isAnchor = true;
-        mapAsset_ExchangeData[assetUSD3].isAnchor = true;
-        mapAsset_ExchangeData[assetUSD4].isAnchor = true;
-        mapAsset_ExchangeData[assetUSD5].isAnchor = true;
-           
-
         exchanges.push(address(0));
 
         _transfer(address(this), msg.sender, purchasingPower);
@@ -208,6 +199,7 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
         mapAsset_ExchangeData[asset].listed = true;
+    
         exchanges.push(asset);
         return true;
     }
@@ -444,6 +436,39 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
         return _y;
     }
+
+    //======================================================================
+    
+    function addAnchor(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
+        require((arrayAnchor.length < 5), "must only have 5 anchors");
+        if(!mapAsset_ExchangeData[asset].isAnchor){
+        require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
+        ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
+        mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
+        mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+        mapAsset_ExchangeData[asset].listed = true;
+        mapAsset_ExchangeData[asset].isAnchor = true;
+        arrayAnchor.push(asset);
+        exchanges.push(asset);
+        }
+        return true;
+    }
+    // function removeAnchor(address asset) public returns (bool success){
+    //     uint assetValue = calcValueInAsset(asset);
+    //     uint delta = (medianMAIValue.sub(assetValue)).div(100);
+    //     require((assetValue ), "must only have 5 anchors");
+    //     if(!mapAsset_ExchangeData[asset].isAnchor){
+    //     require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
+    //     ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
+    //     mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
+    //     mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+    //     mapAsset_ExchangeData[asset].listed = true;
+    //     mapAsset_ExchangeData[asset].isAnchor = true;
+    //     arrayAnchor.push(asset);
+    //     exchanges.push(asset);
+    //     }
+    //     return true;
+    // }
     function _checkAnchor(address _assetFrom, address _assetTo) internal {
         address anchor = address(0);
         if(mapAsset_ExchangeData[_assetFrom].isAnchor){
