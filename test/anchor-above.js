@@ -39,39 +39,39 @@ var burn;
 contract('Anchor', function (accounts) {
 
     constructor(accounts)
-    swapETHToMAI(_dot001, acc0)    //===Median price no change
+    checkValueAnchors()            //===Median price no change
+    checkMAIPrice()
+
+    swapETHToMAI(_dot001, acc0)    //===Median price no change 
     checkValueAnchors()            
-    checkMAIPrice() 
+    checkMAIPrice()
+
     swapMAIToETH(_dot001, acc0)    //===Median price no change 
     checkValueAnchors()            
     checkMAIPrice()
 
-    swapUSDToMAI(_dot001, acc0, 0) //===Value of USD1 increases === MAI ↓ : USD ↑
-    checkValueAnchors()            
+    swapMAIToUSD(_dot0001, acc0, 0)//===Value of USD1 drecreases === MAI ↑ : USD ↓
+    checkValueAnchors()            //===Gets bonus
     checkMAIPrice()
 
-    swapUSDToMAI(_dot001, acc0, 1) //===Value of USD2 increases === MAI ↓ : USD ↑
-    checkValueAnchors()          
+    swapMAIToUSD(_dot001, acc0, 1) //===Value of USD2 drecreases === MAI ↑ : USD ↓
+    checkValueAnchors()            //===Gets bonus
     checkMAIPrice()
 
-    swapMAIToUSD(_dot001, acc0, 3) //===Value of USD4 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()            //===gets penalised
-    checkMAIPrice()
-    
-    swapMAIToUSD(_dot0001, acc0, 4) //===Value of USD5 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()             //===gets penalised
+    swapUSDToMAI(_dot001, acc0, 4) //===Value of USD5 increases === MAI ↓ : USD ↑
+    checkValueAnchors()           
     checkMAIPrice()
 
-    swapETHToUSD(_dot0001, acc0, 0) //===Value of USD1 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()             //===gets penalised
+    swapETHToUSD(_dot0001, acc0, 2) //===Value of USD1 drecreases === MAI ↑ : USD ↓
+    checkValueAnchors()             //===Gets bonus
     checkMAIPrice()
 
-    swapUSDToETH(_dot001, acc0, 3)  //===Value of USD4 increases === MAI ↓ : USD ↑
+    swapUSDToETH(_dot01, acc0, 2)  //===Value of USD1 increases === MAI ↓ : USD ↑
     checkValueAnchors()
     checkMAIPrice()
 
-    swapMAIToUSD(_dot0001, acc0, 4) //===Value of USD5 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()             //===gets penalised
+    swapMAIToUSD(_dot01, acc0, 1)//===Value of USD1 drecreases === MAI ↑ : USD ↓
+    checkValueAnchors()            //===Gets bonus
     checkMAIPrice()
 
     
@@ -136,7 +136,7 @@ contract('Anchor', function (accounts) {
       await instanceMAI.addExchange(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from: acc0 })
      
     });
-  
+
   }
 
  function checkValueAnchors(){
@@ -205,7 +205,7 @@ contract('Anchor', function (accounts) {
     })
   }
   function swapMAIToUSD(inputAmount, recipient, usdIndex) {
-    it("test swap mai to usd"+ (usdIndex+1), async () => {
+    it("test swap mai to usd" + (usdIndex+1), async () => {
       var instanceUSD = arrayInstAnchor[usdIndex]
       var addressUSD = arrayInstAnchor[usdIndex].address;
       await _handleTransferIn(addressMAI, addressUSD, inputAmount, recipient, instanceUSD);
@@ -246,7 +246,7 @@ contract('Anchor', function (accounts) {
       assert.equal(swapAsset.logs[0].event, "Swapped", "Correct event");
       assert.equal(swapAsset.logs[0].args.assetTo, assetTo, " asset to is correct");
       assert.equal(swapAsset.logs[0].args.inputAmount, _.BN2Str(inputAmount), " amount sent is correct");
-      assert.equal(_.BN2Str(swapAsset.logs[0].args.maiAmount),  _.BN2Str(_.floorBN(maiAmount)), " amount mai sent is correct");
+      assert.equal(_.BN2Str(swapAsset.logs[0].args.maiAmount), _.BN2Str(_.floorBN(maiAmount)), " amount mai sent is correct");
       assert.equal(_.BN2Str(swapAsset.logs[0].args.outPutAmount), _.BN2Str(outputAmount), " output is correct");
       assert.equal(swapAsset.logs[0].args.recipient, recipient, " sender is correct");
       await _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_Before, pool2_asset_Before,recipient_Mai_Before, recipient_ETH_Before, recipient_Asset_Before, inputAmount, assetTo, assetFrom, outputAmount, maiAmount, recipient, usdInstance);
@@ -258,7 +258,7 @@ contract('Anchor', function (accounts) {
       assert.equal(swapAsset.logs[1].args.assetTo, assetTo, " asset to is correct");
       assert.equal(swapAsset.logs[1].args.inputAmount, _.BN2Str(inputAmount), " amount sent is correct");
       assert.equal(swapAsset.logs[1].args.maiAmount, _.BN2Str(maiAmount), " amount mai sent is correct");
-      assert.equal(_.BN2Str(swapAsset.logs[1].args.outPutAmount), _.floorBN(_.BN2Str(outputAmount)), " output is correct");
+      assert.equal(_.BN2Str(swapAsset.logs[1].args.outPutAmount), _.BN2Str(_.floorBN(outputAmount)), " output is correct");
       assert.equal(swapAsset.logs[1].args.recipient, recipient, " sender is correct");
       await _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_Before, pool2_asset_Before,recipient_Mai_Before, recipient_ETH_Before, recipient_Asset_Before, inputAmount, assetTo, assetFrom, outputAmount, maiAmount, recipient, usdInstance);
   
@@ -269,7 +269,7 @@ contract('Anchor', function (accounts) {
       assert.equal(swapAsset.logs[1].event, "Swapped", "Correct event");
       assert.equal(swapAsset.logs[1].args.assetTo, assetTo, " asset to is correct");
       assert.equal(swapAsset.logs[1].args.inputAmount, _.BN2Str(inputAmount), " amount sent is correct");
-      assert.equal(_.BN2Str(swapAsset.logs[1].args.maiAmount), _.floorBN(_.BN2Str(maiAmount)), " amount mai sent is correct");
+      assert.equal(_.BN2Str(swapAsset.logs[1].args.maiAmount), _.BN2Str(_.floorBN(maiAmount)), " amount mai sent is correct");
       assert.equal(_.BN2Str(swapAsset.logs[1].args.outPutAmount), _.BN2Str(outputAmount), " output is correct");
       assert.equal(swapAsset.logs[1].args.recipient, recipient, " sender is correct");
       await _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_Before, pool2_asset_Before,recipient_Mai_Before, recipient_ETH_Before, recipient_Asset_Before, inputAmount, assetTo, assetFrom, outputAmount, maiAmount, recipient, usdInstance);
@@ -281,7 +281,7 @@ contract('Anchor', function (accounts) {
       assert.equal(swapAsset.logs[2].args.assetTo, assetTo, " asset to is correct");
       assert.equal(swapAsset.logs[2].args.inputAmount, _.BN2Str(inputAmount), " amount sent is correct");
       assert.equal(swapAsset.logs[2].args.maiAmount, _.BN2Str(maiAmount), " amount mai sent is correct");
-      assert.equal(_.BN2Str(swapAsset.logs[2].args.outPutAmount), _.BN2Str(_.floorBN(outputAmount)), "output is correct");
+      assert.equal(_.roundBN2StrD(swapAsset.logs[2].args.outPutAmount), _.roundBN2StrD(outputAmount), " output is correct");
       assert.equal(swapAsset.logs[2].args.recipient, recipient, " sender is correct");
       await _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_Before, pool2_asset_Before,recipient_Mai_Before, recipient_ETH_Before, recipient_Asset_Before, inputAmount, assetTo, assetFrom, outputAmount, maiAmount, recipient, usdInstance);
     }
@@ -292,8 +292,8 @@ contract('Anchor', function (accounts) {
       assert.equal(swapAsset.logs[1].event, "Swapped", "Correct event");
       assert.equal(swapAsset.logs[1].args.assetTo, assetTo, " asset to is correct");
       assert.equal(swapAsset.logs[1].args.inputAmount, _.BN2Str(inputAmount), " amount sent is correct");
-      assert.equal(_.roundBN2StrD(swapAsset.logs[1].args.maiAmount), _.roundBN2StrD(maiAmount), "amount mai sent is correct");
-      assert.equal(_.roundBN2StrD(swapAsset.logs[1].args.outPutAmount), _.roundBN2StrD(outputAmount), " output is correct");
+      assert.equal(_.BN2Str(swapAsset.logs[1].args.maiAmount), _.BN2Str(_.floorBN(maiAmount)), "amount mai sent is correct");
+      assert.equal(_.BN2Str(swapAsset.logs[1].args.outPutAmount), _.BN2Str(_.floorBN(outputAmount)), " output is correct");
       assert.equal(swapAsset.logs[1].args.recipient, recipient, " sender is correct");
       await _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_Before, pool2_asset_Before,recipient_Mai_Before, recipient_ETH_Before, recipient_Asset_Before, inputAmount, assetTo, assetFrom, outputAmount, maiAmount, recipient, usdInstance);
   
@@ -305,7 +305,7 @@ contract('Anchor', function (accounts) {
       assert.equal(swapAsset.logs[1].event, "Swapped", "Correct event");
       assert.equal(swapAsset.logs[1].args.assetTo, assetTo, " asset to is correct");
       assert.equal(swapAsset.logs[1].args.inputAmount, _.BN2Str(inputAmount), " amount sent is correct");
-      assert.equal(_.roundBN2StrD(swapAsset.logs[1].args.maiAmount), _.roundBN2StrD(maiAmount), " amount mai sent is correct");
+      assert.equal(_.BN2Str(swapAsset.logs[1].args.maiAmount), _.BN2Str(_.floorBN(maiAmount)), " amount mai sent is correct");
       assert.equal(_.BN2Str(swapAsset.logs[1].args.outPutAmount), _.BN2Str(_.floorBN(outputAmount)), " output is correct");
       assert.equal(swapAsset.logs[1].args.recipient, recipient, " sender is correct");
       await _handleTransferOut(pool_mai_Before, pool_asset_Before, pool2_mai_Before, pool2_asset_Before,recipient_Mai_Before, recipient_ETH_Before, recipient_Asset_Before, inputAmount, assetTo, assetFrom, outputAmount, maiAmount, recipient, usdInstance);
@@ -322,36 +322,32 @@ contract('Anchor', function (accounts) {
     if (assetFrom == addressMAI && assetTo == addressETH) {
       let pool_mai_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceMAI);
       let pool_asset_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceAsset);
-      assert.equal(_.roundBN2StrDR((recipient_ETH_After), 3), _.roundBN2StrDR((recipient_ETH_Before.plus(outputAmount)), 3), "correct recipient ETH bal")
+      assert.equal(_.roundBN2StrDR((recipient_ETH_After), 2), _.roundBN2StrDR((recipient_ETH_Before.plus(outputAmount)), 2), "correct recipient ETH bal")
       assert.equal(pool_mai_After, _.BN2Str((pool_mai_Before.plus(inputAmount))), " correct Mai in asset:Mai")
-      assert.equal(pool_asset_After, _.ceilBN(_.BN2Str(pool_asset_Before.minus(outputAmount))), " correct Ether in asset:Mai")
-    } 
-    else if (assetTo == addressMAI) {
+      assert.equal(pool_asset_After, _.BN2Str(_.ceilBN(pool_asset_Before.minus(outputAmount))), " correct Ether in asset:Mai")
+    } else if (assetTo == addressMAI) {
       assert.equal(recipient_Mai_After, _.BN2Str(recipient_Mai_Before.plus(outputAmount)), "correct recipient mai bal")
-      assert.equal(pool_mai_After, _.ceilBN(_.BN2Str((pool_mai_Before.minus(maiAmount)).plus(outputAmount))), " correct Mai in asset:Mai")
+      assert.equal(pool_mai_After, _.BN2Str(_.ceilBN((pool_mai_Before.minus(maiAmount)).plus(outputAmount))), " correct Mai in asset:Mai")
       assert.equal(pool_asset_After, _.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
-    } 
-    else if (assetFrom == addressETH && assetTo !== addressMAI){
+    } else if (assetFrom == addressETH && assetTo !== addressMAI){
       let recipient_Asset_After = _.BN2Str(await usdInstance.balanceOf(recipient));
       let pool2_mai_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceMAI);
       let pool2_asset_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceAsset);
-      //assert.equal(_.roundBN2StrDR((recipient_ETH_After), 2), _.roundBN2StrDR((recipient_ETH_Before.plus(outputAmount)), 2), "correct recipient asset1 bal")
+      assert.equal(_.roundBN2StrDR((recipient_ETH_After), 2), _.roundBN2StrDR((recipient_ETH_Before.plus(outputAmount)), 2), "correct recipient asset1 bal")
       assert.equal(_.roundBN2StrD(recipient_Asset_After), _.roundBN2StrD(recipient_Asset_Before.plus(outputAmount)), "correct recipient asset2 bal")
       assert.equal(_.roundBN2StrD(pool_mai_After), _.roundBN2StrD(pool_mai_Before.minus(maiAmount)), " correct Mai in asset:Mai")
       assert.equal(pool_asset_After, _.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
       assert.equal(pool2_mai_After, _.BN2Str(_.floorBN(pool2_mai_Before.plus(maiAmount).plus(mint))), " correct Mai in asset:Mai")
       assert.equal(_.roundBN2StrD(pool2_asset_After), _.roundBN2StrD(pool2_asset_Before.minus(outputAmount)), " correct asset bal in asset:Mai")
-    }
-    else if(assetFrom == addressMAI && assetTo !== addressETH){
+    }else if(assetFrom == addressMAI && assetTo !== addressETH){
       let recipient_Asset_After = _.BN2Str(await usdInstance.balanceOf(recipient));
       let pool_mai_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceMAI);
       let pool_asset_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceAsset);
       assert.equal(recipient_Mai_After, _.BN2Str(recipient_Mai_Before.minus(inputAmount)), "correct recipient mai bal")
-      assert.equal(recipient_Asset_After, _.BN2Str(_.floorBN(recipient_Asset_Before.plus(outputAmount))), "correct recipient asset2 bal")
-      assert.equal(_.roundBN2StrD(pool_mai_After), _.roundBN2StrD(pool2_mai_Before.plus(inputAmount).minus(burn)), " correct Mai in asset:Mai")
-      assert.equal(pool_asset_After, _.BN2Str(_.ceilBN(pool2_asset_Before.minus(outputAmount))), " correct asset bal in asset:Mai")
-    }
-    else{
+      assert.equal(_.roundBN2StrD(recipient_Asset_After), _.roundBN2StrD(recipient_Asset_Before.plus(outputAmount)), "correct recipient asset2 bal")
+      assert.equal(_.roundBN2StrD(pool_mai_After), _.roundBN2StrD(pool2_mai_Before.plus(inputAmount).plus(mint)), " correct Mai in asset:Mai")
+      assert.equal(_.roundBN2StrD(pool_asset_After), _.roundBN2StrD(pool2_asset_Before.minus(outputAmount))," correct asset bal in asset:Mai")
+    }else{
       let recipient_Asset_After = _.BN2Str(await usdInstance.balanceOf(recipient));
       let pool2_mai_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceMAI);
       let pool2_asset_After = _.BN2Str((await instanceMAI.mapAsset_ExchangeData(assetTo)).balanceAsset);
@@ -359,8 +355,8 @@ contract('Anchor', function (accounts) {
       assert.equal(recipient_Asset_After, _.BN2Str(recipient_Asset_Before.minus(inputAmount)), "correct recipient asset2 bal")
       assert.equal(_.roundBN2StrD(pool_mai_After), _.roundBN2StrD(pool_mai_Before.minus(maiAmount)), " correct Mai in asset:Mai")
       assert.equal(pool_asset_After, _.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
-      assert.equal(_.roundBN2StrD(pool2_mai_After), _.roundBN2StrD(pool2_mai_Before.plus(maiAmount)), " correct Mai in asset:Mai")
-      assert.equal(pool2_asset_After, _.BN2Str(_.ceilBN(pool2_asset_Before.minus(outputAmount))), " correct asset bal in asset:Mai")
+      assert.equal(pool2_mai_After, _.BN2Str(_.floorBN(pool2_mai_Before.plus(maiAmount))), " correct Mai in asset:Mai")
+      assert.equal(pool2_asset_After,  _.BN2Str(_.ceilBN(pool2_asset_Before.minus(outputAmount))) ,"correct asset bal in asset:Mai")
     }
   
   }
@@ -409,16 +405,15 @@ contract('Anchor', function (accounts) {
   async function _adjustAmountIfAnchor(_assetTo, _amount){
     let maiValueInAsset = _.getBN((await help.calcValueInAsset(instanceMAI, _assetTo)));
     let delta; let incentiveFactor = 10; var _x = 0;
-    // console.log("maiValue in asset",_.BN2Str(maiValueInAsset)/_1)
+    //console.log("maiValue in asset",_.BN2Str(maiValueInAsset)/_1)
     let _medianMAIValue = _.getBN(medianMAIValue);
-    //  console.log("medianMaiValue",_.BN2Str(_medianMAIValue)/_1)
+    // console.log("medianMaiValue",_.BN2Str(_medianMAIValue)/_1)
     if(maiValueInAsset.isLessThan(_medianMAIValue)){
         delta = (_medianMAIValue.minus(maiValueInAsset)).div(incentiveFactor);
-        //   console.log("delt",_.BN2Str(delta)/_1)
+         // console.log("delt",_.BN2Str(delta)/_1)
         burn = (_amount.times(delta)).div(_medianMAIValue);
-        //   console.log("burn",_.BN2Str(burn)/_1)
+         // console.log("burn",_.BN2Str(burn)/_1)
         _x = _amount.minus(burn);
-       
     }
     if (maiValueInAsset.isGreaterThan(_medianMAIValue)){
         delta = (maiValueInAsset.minus(_medianMAIValue)).div(incentiveFactor);
