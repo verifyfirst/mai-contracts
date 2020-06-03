@@ -317,7 +317,7 @@ await instanceMAI.addAnchor(arrayAddrAnchor[4], (usd5.asset), (usd5.mai), { from
       assert.equal(pool_asset_After, _.ceilBN(_.BN2Str(pool_asset_Before.minus(outputAmount))), " correct Ether in asset:Mai")
     } 
     else if (assetTo == addressMAI) {
-      assert.equal(recipient_Mai_After, _.BN2Str(recipient_Mai_Before.plus(outputAmount)), "correct recipient mai bal")
+      assert.equal(recipient_Mai_After, _.BN2Str(_.floorBN(recipient_Mai_Before.plus(maiAmount))), "correct recipient mai bal")
       assert.equal(pool_mai_After, _.ceilBN(_.BN2Str((pool_mai_Before.minus(maiAmount)).plus(outputAmount))), " correct Mai in asset:Mai")
       assert.equal(pool_asset_After, _.BN2Str(pool_asset_Before.plus(inputAmount)), " correct asset bal in asset:Mai")
     } 

@@ -395,7 +395,7 @@ contract MAI is ERC20{
         
         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
-        _handleTransferOut(assetTo, outputAmount, msg.sender);
+        _handleTransferOut(assetTo, maiAmount, outputAmount,  msg.sender);
         _checkAnchor(assetFrom, assetTo);
         return true;
     }
@@ -521,13 +521,13 @@ contract MAI is ERC20{
         }    
         return _x;
     }
-    function _handleTransferOut(address _assetTo, uint _amount, address payable _recipient) internal {
+    function _handleTransferOut(address _assetTo, uint maiAmount, uint _amountAsset, address payable _recipient) internal {
         if (_assetTo == address(0)) {
-            _recipient.transfer(_amount);
+            _recipient.transfer(_amountAsset);
         } else if (_assetTo == address(this)) {
-            transfer(_recipient, _amount);
+            _transfer(address(this), _recipient, maiAmount);
         } else {
-            ERC20(_assetTo).transfer(_recipient, _amount);
+            ERC20(_assetTo).transfer(_recipient, _amountAsset);
         }
     }
 
