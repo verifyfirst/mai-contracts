@@ -1,6 +1,6 @@
 var BigNumber = require('bignumber.js');
 
-function calcCLPSwap(x, X, Y) {
+async function calcCLPSwap(x, X, Y) {
     // y = (x * Y * X)/(x + X)^2
     const _x = new BigNumber(x)
     const _X = new BigNumber(X)
@@ -8,7 +8,8 @@ function calcCLPSwap(x, X, Y) {
     const numerator = _x.times(_Y).times(_X)
     const denominator = (_x.plus(_X)).times(_x.plus(_X))
     const _y = numerator.div(denominator)
-    const y = (new BigNumber(_y)).integerValue(1);
+    const y = (new BigNumber(_y));
+
     return y;
   }
   

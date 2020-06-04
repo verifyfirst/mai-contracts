@@ -1,6 +1,4 @@
-pragma solidity 0.6.4;
-
-//ERC20 Interface nice
+pragma solidity ^0.6.4;
 interface ERC20 {
     function totalSupply() external view returns (uint);
     function balanceOf(address account) external view returns (uint);
@@ -11,7 +9,6 @@ interface ERC20 {
     event Transfer(address indexed from, address indexed to, uint amount);
     event Approval(address indexed owner, address indexed spender, uint amount);
 }
-//Safe mathematics
 library SafeMath {
  function sub(uint a, uint b) internal pure returns (uint) {
   assert(b <= a);
@@ -44,7 +41,7 @@ library SafeMath {
 }
 contract MAI is ERC20{
     using SafeMath for uint;
-    string public name = "MAI Asset";
+    string public name = "MAI Token";
     string public symbol = "MAI";
     uint public decimals  = 18;
     uint public override totalSupply;
@@ -54,16 +51,15 @@ contract MAI is ERC20{
 
     mapping(address => uint) public override balanceOf;
     mapping(address => mapping(address => uint)) public override allowance;
-
     
     uint public minCollaterisation;
     uint public defaultCollateralisation;
     uint public etherPrice;
-    uint public medianMAIPrice;
+    uint public medianMAIValue;
     address[5] public arrayAnchor;
     uint public mintedMAI;
     uint public pooledMAI;
-
+    uint public incentiveFactor = 10;
     mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
@@ -91,11 +87,8 @@ contract MAI is ERC20{
         uint poolUnits;
         mapping(address => uint) stakerUnits;
     }
-   
-    // Events
     event Transfer (address indexed from, address indexed to, uint amount);
     event Approval ( address indexed owner, address indexed spender, uint amount);
-
     event NewCDP(uint CDP, uint time, address owner, uint debtIssued, uint collateralHeld, uint collateralisation);
     event UpdateCDP(uint CDP, uint time, address owner, uint debtAdded, uint collateralAdded, uint collateralisation);
     event CloseCDP(uint CDP, uint time, address owner, uint debtPaid, uint etherReturned);
@@ -103,11 +96,7 @@ contract MAI is ERC20{
     event AddLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsIssued);
     event RemoveLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsClaimed);
     event Swapped(address assetFrom, address assetTo, uint inputAmount, uint maiAmount, uint outPutAmount, address recipient);
-
-    event Testing1 (uint val1);
-    event Testing2 (uint val1, uint val2);
-    event Testing3 (uint val1, uint val2, uint val3);
-
+    
     function transfer(address to, uint amount) public override  returns (bool success) {
         _transfer(msg.sender, to, amount);
         return true;
@@ -121,7 +110,6 @@ contract MAI is ERC20{
         emit Approval(_approver, _spender, _amount);
         return true;
     }
-    //Transfer function
     function _transfer(address _from, address _to, uint _amount) internal returns (bool success) {
         require(balanceOf[_from] >= _amount,'Sender must have enough to spend');
         balanceOf[_from] = balanceOf[_from].sub(_amount);
@@ -129,15 +117,12 @@ contract MAI is ERC20{
         emit Transfer(_from, _to, _amount);
         return true;
     }
-
-    //Delegate a Transfer
     function transferFrom(address from, address to, uint amount) public override returns (bool success) {
         require(amount <= allowance[from][to], 'Sender must have enough allowance to send');
         allowance[from][to] = allowance[from][to].sub(amount);
         _transfer(from, to, amount);
         return true;
     }
-
     function _mint(uint _amount) internal returns (bool success){
         require(_amount > 0);
         totalSupply = totalSupply.add(_amount);
@@ -154,20 +139,17 @@ contract MAI is ERC20{
         return true;
     }
 
-    constructor (address assetUSD1, address assetUSD2,
-        address assetUSD3, address assetUSD4, address assetUSD5) public payable {
-
+    constructor (address usd1, address usd2, address usd3, address usd4, address usd5) public payable {
         notEntered = true;
         defaultCollateralisation = 150;
         minCollaterisation = 101;
-        arrayAnchor[0] = assetUSD1; arrayAnchor[1] = assetUSD2;
-        arrayAnchor[2] = assetUSD3; arrayAnchor[3] = assetUSD4; arrayAnchor[4] = assetUSD5;
-        medianMAIPrice = _1;
+        medianMAIValue = _1;
+        arrayAnchor[0] = usd1; arrayAnchor[1] = usd2;
+        arrayAnchor[2] = usd3; arrayAnchor[3] = usd4; arrayAnchor[4] = usd5;
         // Construct with 3 Eth 
         // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
         // 1 Eth + 200 MAI in address(0) pool
         // 200 MAI back to sender
-       
         uint genesisPrice = 200;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
          _mint(purchasingPower*2);
@@ -181,6 +163,13 @@ contract MAI is ERC20{
         mapCDP_Data[CDP].owner = address(0);
         mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
+         mapAsset_ExchangeData[usd1].isAnchor = true;
+          mapAsset_ExchangeData[usd2].isAnchor = true;
+           mapAsset_ExchangeData[usd3].isAnchor = true;
+            mapAsset_ExchangeData[usd4].isAnchor = true;
+             mapAsset_ExchangeData[usd5].isAnchor = true;
+
+        
 
         _transfer(address(this), msg.sender, purchasingPower);
         //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
@@ -200,6 +189,7 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
         mapAsset_ExchangeData[asset].listed = true;
+        _addLiquidity(asset, amountAsset, amountMAI);
         exchanges.push(asset);
         return true;
     }
@@ -392,9 +382,10 @@ contract MAI is ERC20{
         } else {
             ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
         }
+        
         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
-        _handleTransferOut(assetTo, outputAmount, msg.sender);
+        _handleTransferOut(assetTo, maiAmount, outputAmount,  msg.sender);
         _checkAnchor(assetFrom, assetTo);
         return true;
     }
@@ -415,7 +406,27 @@ contract MAI is ERC20{
         return (_m, _y);
     }
 
-    function _checkAnchor(address _assetFrom, address _assetTo) internal {
+    function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
+        uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
+        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
+        _y = calcCLPSwap(_x, _X, _Y);
+        mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
+        mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
+        return _y;
+    }
+
+    function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
+        uint _X = mapAsset_ExchangeData[_assetTo].balanceMAI;
+        uint _Y = mapAsset_ExchangeData[_assetTo].balanceAsset;
+        if(mapAsset_ExchangeData[_assetTo].isAnchor){
+         _x = _adjustAmountIfAnchor(_assetTo, _x);
+        }
+         _y = calcCLPSwap(_x, _X, _Y);
+        mapAsset_ExchangeData[_assetTo].balanceMAI += _x;
+        mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
+        return _y;
+    }
+function _checkAnchor(address _assetFrom, address _assetTo) internal {
         address anchor = address(0);
         if(mapAsset_ExchangeData[_assetFrom].isAnchor){
             anchor = _assetFrom;
@@ -423,18 +434,16 @@ contract MAI is ERC20{
             anchor = _assetTo;
         }
         if(anchor != address(0)){
-            // 1) Mint/Burn based on price diff
             updatePrice();
         }
     }
-
     function updatePrice() public {
         uint[5] memory arrayPrices;
         for(uint i = 0; i < 5; i++){
             arrayPrices[i] = (calcValueInAsset(arrayAnchor[i]));
         }
         uint[5] memory sortedPriceFeed = _sortArray(arrayPrices);
-        medianMAIPrice = sortedPriceFeed[2];
+        medianMAIValue = sortedPriceFeed[2];
     }
 
     function _sortArray(uint[5] memory array) internal pure returns (uint[5] memory) {
@@ -451,35 +460,30 @@ contract MAI is ERC20{
         return array;
     }
 
-
-    function _swapMaiToAsset(address _assetTo, uint _x) internal returns (uint _y){
-        uint _X = mapAsset_ExchangeData[_assetTo].balanceMAI;
-        uint _Y = mapAsset_ExchangeData[_assetTo].balanceAsset;
-        // bool listed = getListed(_assetTo);
-        // if(listed){ x = _checkListed(_assetTo, x); }
-        _y = calcCLPSwap(_x, _X, _Y);
-        mapAsset_ExchangeData[_assetTo].balanceMAI += _x;
-        mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
-        return _y;
+    function _adjustAmountIfAnchor(address _asset, uint _amount) internal returns (uint _x){
+        uint maiValueInAsset = calcValueInAsset(_asset);
+        uint delta;
+        if(maiValueInAsset < medianMAIValue){
+            delta = (medianMAIValue.sub(maiValueInAsset)).div(incentiveFactor);
+            uint burn = (_amount.mul(delta)).div(medianMAIValue);
+             _burn(burn);
+             _x = _amount.sub(burn);
+        }
+        if (maiValueInAsset > medianMAIValue){
+            delta = (maiValueInAsset.sub(medianMAIValue)).div(incentiveFactor);
+            uint mint = (_amount.mul(delta)).div(medianMAIValue);
+             _mint(mint);
+             _x = _amount.add(mint);
+        }    
+        return _x;
     }
-
-    function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
-        uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
-        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
-        _y = calcCLPSwap(_x, _X, _Y);
-        mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
-        mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
-        return _y;
-    }
-
-    function _handleTransferOut(address _assetTo, uint _amount, address payable _recipient) internal {
+    function _handleTransferOut(address _assetTo, uint maiAmount, uint _amountAsset, address payable _recipient) internal {
         if (_assetTo == address(0)) {
-            _recipient.transfer(_amount);
-            // updateEtherPrice();
+            _recipient.transfer(_amountAsset);
         } else if (_assetTo == address(this)) {
-            transfer(_recipient, _amount);
+            _transfer(address(this), _recipient, maiAmount);
         } else {
-            ERC20(_assetTo).transfer(_recipient, _amount);
+            ERC20(_assetTo).transfer(_recipient, _amountAsset);
         }
     }
 
@@ -501,7 +505,7 @@ contract MAI is ERC20{
    function calcEtherPriceInUSD(uint amount) public view returns (uint amountBought){
        uint etherPriceInMAI = calcValueInMAI(address(0));
     //    uint maiPriceInUSD = calcValueInAsset(exchangeUSD);
-       uint ethPriceInUSD = medianMAIPrice.mul(etherPriceInMAI).div(_1);//
+       uint ethPriceInUSD = medianMAIValue.mul(etherPriceInMAI).div(_1);//
        return (amount.mul(ethPriceInUSD)).div(_1);
    }
 

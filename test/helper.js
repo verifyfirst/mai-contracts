@@ -17,11 +17,12 @@ async function calcValueInMai(instance, token) {
   }
   return result.toFixed()
 }
-async function calcValueInAsset() {
-  usdBal = new BigNumber(usdPool.asset)
-  maiBal = new BigNumber(usdPool.mai)
-  return ((_1BN.times(usdBal)).div(maiBal)).toFixed()
+async function calcValueInAsset(instance, token) {
+  assetBal = new BigNumber((await instance.mapAsset_ExchangeData(token)).balanceAsset);
+  maiBal = new BigNumber((await instance.mapAsset_ExchangeData(token)).balanceMAI);
+  return ((_1BN.times(assetBal)).div(maiBal)).toFixed()
 }
+
 async function calcEtherPriceInUSD(instance, amount) {
   const _amount = new BigNumber(amount)
   const etherPriceInMai = new BigNumber(await calcValueInMai(instance, addressETH))
