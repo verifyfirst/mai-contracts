@@ -64,7 +64,6 @@ contract MAI is ERC20{
     uint public mintedMAI;
     uint public pooledMAI;
     uint public incentiveFactor = 10;
-    uint public anchorLimit = 91;
     mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
@@ -104,7 +103,7 @@ contract MAI is ERC20{
     event AddLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsIssued);
     event RemoveLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsClaimed);
     event Swapped(address assetFrom, address assetTo, uint inputAmount, uint maiAmount, uint outPutAmount, address recipient);
-
+    event AnchorRemoved(address assetAnchor, uint delta, uint assetValue, address recipient);
     function transfer(address to, uint amount) public override  returns (bool success) {
         _transfer(msg.sender, to, amount);
         return true;
@@ -452,36 +451,33 @@ contract MAI is ERC20{
     }
     function removeAnchor(address asset) public returns (bool success){
         require((mapAsset_ExchangeData[asset].isAnchor = true), "must be an anchor");
-        uint assetValue = calcValueInMAI(asset);
-        uint multiplier = 100;
-        uint delta = (assetValue.div(medianMAIValue).mul(multiplier));
-        require((delta < anchorLimit), "must be less than anchor limit ");
-        for (uint i=0; i < 5; i++) {
+        uint maxAnchorSlip = 10**17;
+        uint assetValue = calcValueInAsset(asset);
+        uint numerator = assetValue.sub(medianMAIValue);
+        uint denominator =(assetValue.add(medianMAIValue)).div(2);
+        uint delta = ((_1.mul(numerator)).div(denominator));
+        require((delta > maxAnchorSlip), "percentage difference > anchor limit percentage ");
+        for (uint i=0; i < arrayAnchor.length; i++) {
              if (arrayAnchor[i] == asset){
-                 _removeFromArray(i, arrayAnchor);
+                 arrayAnchor[i] = arrayAnchor[arrayAnchor.length - 1];
+                 arrayAnchor.pop();
                 }
         }
-        //_nukeAnchor(asset); 
-        updatePrice();           
+        //_nukeAnchor(asset);  
+        emit AnchorRemoved(asset, delta, assetValue, msg.sender);
+                
         return true;
     }
-     function _removeFromArray(uint index, address[] storage array) internal returns (address[] storage ) {
-        array[index] = array[array.length - 1];
-        array.pop();
-        return array;
+   
+    function _nukeAnchor(address _asset) internal returns (bool success){
+         uint _outputMAI; uint _outputAsset; uint _bp = 10000;
+        for(uint i = 0; i < mapAsset_ExchangeData[_asset].stakers[].length; i++){
+        (_outputMAI, _outputAsset) = _removeLiquidity(_asset, _bp);
+        ERC20(_asset).transfer(mapAsset_ExchangeData[_asset].stakers[i], _outputAsset);
+        require (_transfer(address(this), mapAsset_ExchangeData[_asset].stakers[i], _outputMAI));
+        }
+        mapAsset_ExchangeData[asset].isAnchor = false;
     }
-  
-    // function _nukeAnchor(address _asset) internal returns (bool success){
-    //      uint _outputMAI; uint _outputAsset; uint _bp = 10000;
-    //     for(uint i = 0; i < mapAsset_ExchangeData[_asset].stakers[].length; i++){
-    //     (_outputMAI, _outputAsset) = _removeLiquidity(_asset, _bp);
-    //     ERC20(_asset).transfer(mapAsset_ExchangeData[_asset].stakers[i], _outputAsset);
-    //     require (_transfer(address(this), mapAsset_ExchangeData[_asset].stakers[i], _outputMAI));
-    //     }
-        
-        
-    //     mapAsset_ExchangeData[asset].isAnchor = false;
-    // }
 
     function _checkAnchor(address _assetFrom, address _assetTo) internal {
         address anchor = address(0);
