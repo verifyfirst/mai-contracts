@@ -21,7 +21,7 @@ module.exports = async() => {
     USD5.setAsDeployed(usd5)
     const usd6 = await USD6.new();
     USD6.setAsDeployed(usd6)
-    const mai = await MAI.new({ value: initialETH});
+    const mai = await MAI.new(usd1.address, usd2.address,usd3.address, usd4.address, usd5.address, { value: initialETH});
     MAI.setAsDeployed(mai)
     // console.log(usd1.address, usd2.address, usd3.address,
     //     usd4.address, usd5.address)
