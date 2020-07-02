@@ -65,7 +65,7 @@ contract MAI is ERC20{
         address[] exchanges;
         uint CDP;
     }
-
+  
     mapping(uint => CDPData) public mapCDP_Data;
     uint public countOfCDPs;
     struct CDPData {
@@ -165,7 +165,6 @@ contract MAI is ERC20{
         mapCDP_Data[CDP].owner = address(0);
         mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
-
         _transfer(address(this), msg.sender, purchasingPower);
         //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
       
@@ -218,7 +217,7 @@ contract MAI is ERC20{
         require (CDP != 0, "Must be an owner already");
         uint collateral = mapCDP_Data[CDP].collateral;
         uint purchasingPower = calcEtherPPinMAI(collateral);//how valuable Ether is in MAI
-        uint maxMintAmount = (purchasingPower.mul(collateralisation)).div(100);
+        uint maxMintAmount = (purchasingPower.mul(100)).div(collateralisation);
         uint additionalMintAmount = maxMintAmount.sub(mapCDP_Data[CDP].debt);
         mapCDP_Data[CDP].debt += additionalMintAmount;
         _mint(additionalMintAmount);
