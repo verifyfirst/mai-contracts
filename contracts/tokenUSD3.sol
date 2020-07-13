@@ -82,7 +82,7 @@ contract tokenUSD3 is ERC20 {
     constructor() public{
         balanceOf[msg.sender] = totalSupply;
         name = "USD3";
-        symbol  = "tUSD";
+        symbol  = "tUSD3";
         emit Transfer(address(0), msg.sender, totalSupply);
     }
     

@@ -73,10 +73,9 @@ contract MAI is ERC20{
         uint debt;
         address payable owner;
     }
-
     mapping(address => ExchangeData) public mapAsset_ExchangeData;
+    //uint public stakerCount;
     address[] public exchanges;
-
      struct ExchangeData {
         bool listed;
         bool isAnchor;
@@ -97,6 +96,32 @@ contract MAI is ERC20{
     event RemoveLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsClaimed);
     event Swapped(address assetFrom, address assetTo, uint inputAmount, uint maiAmount, uint outPutAmount, address recipient);
     event AnchorRemoved(address assetAnchor, uint delta, uint assetValue, address recipient);
+    //======##Getters##======
+    function calcStakerUnits(address asset, address staker) public view returns(uint stakerUnits){
+         return (mapAsset_ExchangeData[asset].stakerUnits[staker]);
+    }
+    function calcStakerAddress(address asset, uint index) public view returns(address staker){
+        return(mapAsset_ExchangeData[asset].stakers[index]);
+    }
+    function calcStakerCount(address asset) public view returns (uint){
+        return(mapAsset_ExchangeData[asset].stakers.length);
+    }
+    function getExhangesCount() public view returns (uint){
+        return exchanges.length;
+    }
+    function getAnchorsCount() public view returns (uint){
+        return arrayAnchor.length;
+    }
+    function getMembersCount() public view returns (uint){
+        return members.length;
+    }
+    function getMemberExchangeCount(address member) public view returns (uint){
+        return (mapAddress_MemberData[member].exchanges.length);
+    }
+    function getStakerExchanges (address member, uint index) public view returns (address exchange){
+         return (mapAddress_MemberData[member].exchanges[index]);
+    }
+
     function transfer(address to, uint amount) public override  returns (bool success) {
         _transfer(msg.sender, to, amount);
         return true;
@@ -158,7 +183,7 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
         mapAsset_ExchangeData[address(0)].balanceMAI = purchasingPower;
         uint mintAmount = (purchasingPower.mul(100)).div(defaultCollateralisation);
-        uint CDP = 0; countOfCDPs = 0;
+        uint CDP = 0; countOfCDPs = 0; 
         mapAddress_MemberData[address(0)].CDP = CDP;
         mapCDP_Data[CDP].collateral = (msg.value * 2)/3;
         mapCDP_Data[CDP].debt = mintAmount;
@@ -169,22 +194,14 @@ contract MAI is ERC20{
         //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
       
     }
-    function calcStakerUnits(address asset, address staker) public view returns(uint stakerUnits){
-         return (mapAsset_ExchangeData[asset].stakerUnits[staker]);
-    }
-
-    function calcStakerAddress(address asset, uint index) public view returns(address staker){
-            return(mapAsset_ExchangeData[asset].stakers[index]);
-    }
-
+    
     function addExchange(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
-        require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
+         require((amountMAI > 0) && ((amountAsset > 0)), "Must get Mai or token");
+         _transfer(msg.sender, address(this), amountMAI);
         ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
-        mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
-        mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+        exchanges.push(asset);
         mapAsset_ExchangeData[asset].listed = true;
         _addLiquidity(asset, amountAsset, amountMAI);
-        exchanges.push(asset);
         return true;
     }
 
@@ -312,11 +329,11 @@ contract MAI is ERC20{
     }
  
     function _addLiquidity(address asset, uint a, uint m) internal {
-        if (mapAsset_ExchangeData[asset].listed = false) {                                                         
-            exchanges.push(asset);                                                // Add new exchange
-            mapAsset_ExchangeData[asset].listed = true;
+        if (mapAsset_ExchangeData[asset].listed = false) {                                                                                     
             mapAsset_ExchangeData[asset].balanceMAI = m;
             mapAsset_ExchangeData[asset].balanceAsset = a;
+            exchanges.push(asset);  // Add new exchange
+            mapAsset_ExchangeData[asset].listed = true;
         } else {
             mapAsset_ExchangeData[asset].balanceMAI += m;
             mapAsset_ExchangeData[asset].balanceAsset += a;
@@ -325,6 +342,7 @@ contract MAI is ERC20{
             mapAsset_ExchangeData[asset].stakers.push(msg.sender);
             mapAddress_MemberData[msg.sender].exchanges.push(asset);
             members.push(msg.sender);
+            //stakerCount += 1;
         }
         uint M = mapAsset_ExchangeData[asset].balanceMAI;
         uint A = mapAsset_ExchangeData[asset].balanceAsset;
