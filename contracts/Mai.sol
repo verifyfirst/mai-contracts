@@ -274,8 +274,9 @@ contract MAI is ERC20{
       uint closeAmount = debt.div(basisPoints.div(_liquidation));
       uint collateral = mapCDP_Data[CDP].collateral;
       uint returnAmount = collateral.div(basisPoints.div(_liquidation));
-      require(MAI._approve(msg.sender, address(this), closeAmount), 'Must approve first');
-      require(MAI.transferFrom(msg.sender, address(this), closeAmount), 'must collect debt');
+     // require(MAI._approve(msg.sender, address(this), closeAmount), 'Must approve first');
+      //require(MAI.transferFrom(msg.sender, address(this), closeAmount), 'must collect debt');
+      _transfer(msg.sender, address(this), closeAmount);
       require(_burn(closeAmount), 'Must burn debt');
       mapCDP_Data[CDP].debt -= closeAmount;
       mapCDP_Data[CDP].collateral -= returnAmount;
@@ -394,7 +395,6 @@ contract MAI is ERC20{
         } else {
             ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
         }
-        
         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
         _handleTransferOut(assetTo, maiAmount, outputAmount,  msg.sender);
