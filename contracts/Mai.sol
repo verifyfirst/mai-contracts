@@ -165,35 +165,40 @@ contract MAI is ERC20{
         return true;
     }
 
-    constructor () public payable {
-
+      constructor (address usd1, address usd2, address usd3, address usd4, address usd5) public payable {
         notEntered = true;
         defaultCollateralisation = 150;
         minCollaterisation = 101;
-      
         medianMAIValue = _1;
+        arrayAnchor[0] = usd1; arrayAnchor[1] = usd2;
+        arrayAnchor[2] = usd3; arrayAnchor[3] = usd4; arrayAnchor[4] = usd5;
         // Construct with 3 Eth 
         // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
         // 1 Eth + 200 MAI in address(0) pool
         // 200 MAI back to sender
-       
         uint genesisPrice = 200;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
          _mint(purchasingPower*2);
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
         mapAsset_ExchangeData[address(0)].balanceMAI = purchasingPower;
         uint mintAmount = (purchasingPower.mul(100)).div(defaultCollateralisation);
-        uint CDP = 0; countOfCDPs = 0; 
+        uint CDP = 0; countOfCDPs = 0;
         mapAddress_MemberData[address(0)].CDP = CDP;
         mapCDP_Data[CDP].collateral = (msg.value * 2)/3;
         mapCDP_Data[CDP].debt = mintAmount;
         mapCDP_Data[CDP].owner = address(0);
         mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
+        mapAsset_ExchangeData[usd1].isAnchor = true;
+        mapAsset_ExchangeData[usd2].isAnchor = true;
+        mapAsset_ExchangeData[usd3].isAnchor = true;
+        mapAsset_ExchangeData[usd4].isAnchor = true;
+        mapAsset_ExchangeData[usd5].isAnchor = true;
+
+        
+
         _transfer(address(this), msg.sender, purchasingPower);
         //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
-      
-    }
     
     function addExchange(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
          require((amountMAI > 0) && ((amountAsset > 0)), "Must get Mai or token");
