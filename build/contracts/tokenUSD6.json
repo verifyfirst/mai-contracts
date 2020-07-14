@@ -13301,12 +13301,12 @@
         }
       },
       "links": {},
-      "address": "0x50BCb8A008FcB8181aEb0e03da65467011b242C0",
-      "transactionHash": "0x15e32d12d9a7f7e148bd8ac410aeb1942201c73d5b7e99112e7de789cb74f0c8"
+      "address": "0x5302D8CC9457BeE35811D01b4cB60903aa6D1209",
+      "transactionHash": "0x64bca87048c2c448aad4c30971c4012fc2727bf6d1869a93c0fb34f67a5d32a9"
     }
   },
   "schemaVersion": "3.2.0",
-  "updatedAt": "2020-07-14T07:23:22.406Z",
+  "updatedAt": "2020-07-14T08:22:15.949Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}
