@@ -74,7 +74,7 @@ contract MAI is ERC20{
         address payable owner;
     }
     mapping(address => ExchangeData) public mapAsset_ExchangeData;
-    //uint public stakerCount;
+    
     address[] public exchanges;
      struct ExchangeData {
         bool listed;
@@ -84,6 +84,7 @@ contract MAI is ERC20{
         address[] stakers;
         uint poolUnits;
         mapping(address => uint) stakerUnits;
+        mapping(address => bool) isActivePoolStaker;
     }
     event Transfer (address indexed from, address indexed to, uint amount);
     event Approval ( address indexed owner, address indexed spender, uint amount);
@@ -166,22 +167,22 @@ contract MAI is ERC20{
     }
 
     constructor () public payable {
-
         notEntered = true;
         defaultCollateralisation = 150;
         minCollaterisation = 101;
-      
         medianMAIValue = _1;
-        // Construct with 3 Eth 
-        // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
-        // 1 Eth + 200 MAI in address(0) pool
-        // 200 MAI back to sender
-       
         uint genesisPrice = 200;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
-         _mint(purchasingPower*2);
+        _mint(purchasingPower*2);
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
         mapAsset_ExchangeData[address(0)].balanceMAI = purchasingPower;
+        uint poolUnit = ((msg.value/3).add(purchasingPower))/2;
+        mapAsset_ExchangeData[address(0)].poolUnits = poolUnit;
+        mapAsset_ExchangeData[address(0)].stakers.push(msg.sender);
+        mapAsset_ExchangeData[address(0)].isActivePoolStaker[msg.sender] = true;
+        mapAsset_ExchangeData[address(0)].stakerUnits[msg.sender] += poolUnit;
+        mapAddress_MemberData[msg.sender].exchanges.push(address(0));
+        members.push(msg.sender);
         uint mintAmount = (purchasingPower.mul(100)).div(defaultCollateralisation);
         uint CDP = 0; countOfCDPs = 0; 
         mapAddress_MemberData[address(0)].CDP = CDP;
@@ -191,8 +192,7 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
         _transfer(address(this), msg.sender, purchasingPower);
-        //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
-      
+        emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
     }
     
     function addExchange(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
@@ -339,11 +339,11 @@ contract MAI is ERC20{
             mapAsset_ExchangeData[asset].balanceMAI += m;
             mapAsset_ExchangeData[asset].balanceAsset += a;
         }
-        if (mapAsset_ExchangeData[asset].stakerUnits[msg.sender] == 0) {
+        if (mapAsset_ExchangeData[asset].isActivePoolStaker[msg.sender] == false){
             mapAsset_ExchangeData[asset].stakers.push(msg.sender);
             mapAddress_MemberData[msg.sender].exchanges.push(asset);
             members.push(msg.sender);
-            //stakerCount += 1;
+            mapAsset_ExchangeData[asset].isActivePoolStaker[msg.sender] = true;
         }
         uint M = mapAsset_ExchangeData[asset].balanceMAI;
         uint A = mapAsset_ExchangeData[asset].balanceAsset;
