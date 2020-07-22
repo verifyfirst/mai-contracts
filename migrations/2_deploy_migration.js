@@ -7,7 +7,7 @@ var USD4 = artifacts.require( "USDC.sol");
 var USD5 = artifacts.require( "DAI.sol");
 var USD6 = artifacts.require( "Koven.sol");
 
-const initialETH = 3 * 10 ** 18; //30
+const initialETH = 3 * 10 ** 19; //30
 
 module.exports = function(deployer) {
   deployer.deploy(USD1);
