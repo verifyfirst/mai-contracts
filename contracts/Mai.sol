@@ -322,7 +322,6 @@ contract MAI is ERC20{
 
     //==================================================================================//
     // Liquidity functions
-
     function addLiquidityToEtherPool (uint amountMAI) public payable returns (bool success) {
         require((amountMAI > 0) || ((msg.value > 0)), "Must get Mai or Eth");
         //require(transferFrom(msg.sender, address(this), amountMAI), "Must collect MAI");
