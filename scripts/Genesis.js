@@ -32,6 +32,8 @@ const amountMAI = 200            //Starting MAI balance for anchor pools
 const amountAsset = 201          //Starting Asset balance for anchor pools
 const usd = { "asset": (_1BN * amountAsset).toString(), "mai": (_1BN * amountMAI).toString()}
 
+
+
 // ============Minter Parameters===============
 const mETH = 0.2     // Minter Bot ETH Allowance
 const mCollat = 150  // Minters Default Collaterisation
