@@ -65,30 +65,29 @@ async function main() {
    arrayAddr.push(MAI_ADDRESS)
    arrayInst.push(MAI_instance)
    await deployAnchors()
-   await addAnchors()
    await distributeTokens()
+   await addAnchors()
+   await approveAccounts()
    await buildEXCEL()
    let anchorCount = (await MAI_instance.getAnchorsCount())
       if(anchorCount = 5){
         for(let i = 0; i<4032; i++){
-         //console.log("Hour" + i)
          //await ethPriceBoss()
-         //await checkETHPrice()
+         await checkETHPrice()
          
          if(i == hourTracker){
           await snapshotData()
           await liquidatorBot()
-          hourTracker +=3
+          hourTracker += 4
         }
+        
          if(i == dayTracker){
-          
            await minter()
            dayTracker += 12          
          }
          if(i == weekTracker){
-           
-           // await yoloStaker()
-           // await sensibleStaker()
+            await yoloStaker()
+            await sensibleStaker()
           weekTracker += 48 
          }
          
@@ -189,34 +188,33 @@ async function approveAccounts(){
 //======================Minter=====================
 // Accounts 1-3
 async function minter(){
- let defaultCollaterisation = mCollat 
- let randomAccount =  Math.floor(Math.random() * 3)+1; 
- let account = accounts[randomAccount]
- let ethAmount =  (_1BN * mETH).toString()
- console.log(ethAmount/_1)
- let txOpenCDP = (await MAI_instance.openCDP(defaultCollaterisation, {from:account, value: ethAmount}))
- txCount += 1
- let randomPool = Math.floor(Math.random() * 6); 
- let eth_price = _.BN2Str(await MAI_instance.calcValueInMAI(ETH_ADDRESS))
- 
- if(randomPool == 0){
-   let maiBal = (await MAI_instance.balanceOf(account))
-   let maiAmount = ((maiBal * 99.99)/100).toString()
-   let ethStakeAmount = (_1BN * (maiAmount/eth_price)).toString()
-   let txStakeAsset = (await MAI_instance.addLiquidityToEtherPool( maiAmount, {from:account, value:ethStakeAmount})) 
-   console.log("Minter STAKED! " + "Asset:" + _.roundBN2StrD(ethStakeAmount/_1)  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + "ETH")
-   await poolBalance(ETH_ADDRESS)
- }else{
-   let address = arrayAddr[randomPool]
-   let anchor_price = _.BN2Str(await MAI_instance.calcValueInAsset(address))
-   let maiBal = (await MAI_instance.balanceOf(account))
-   let maiAmount = ((maiBal * 95)/100).toString()
-   let assetStakeAmount = maiAmount
-   let txStakeAsset = (await MAI_instance.addLiquidityToAssetPool(address, assetStakeAmount, maiAmount, {from:account})) 
-   let pool = (await arrayInst[randomPool].symbol())
-   //await poolBalance(address)
-   console.log("Minter STAKED! " + "Asset:" + _.BN2Str(_.floorBN(assetStakeAmount/_1))  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + pool)
- }
+  let defaultCollaterisation = mCollat 
+  let randomAccount =  Math.floor(Math.random() * 3)+1; 
+  let account = accounts[randomAccount]
+  let ethAmount =  (_1BN * mETH).toString()
+  let txOpenCDP = (await MAI_instance.openCDP(defaultCollaterisation, {from:account, value: ethAmount}))
+  txCount += 1
+  let randomPool = Math.floor(Math.random() * 6); 
+  let eth_price = _.BN2Str(await MAI_instance.calcValueInMAI(ETH_ADDRESS))
+  
+  if(randomPool == 0){
+    let maiBal = (await MAI_instance.balanceOf(account))
+    let maiAmount = ((maiBal * 99.99)/100).toString()
+    let ethStakeAmount = (_1BN * (maiAmount/eth_price)).toString()
+    let txStakeAsset = (await MAI_instance.addLiquidityToEtherPool( maiAmount, {from:account, value:ethStakeAmount})) 
+   // console.log("Minter STAKED! " + "Asset:" + _.roundBN2StrD(ethStakeAmount/_1)  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + "ETH")
+    //await poolBalance(ETH_ADDRESS)
+  }else{
+    let address = arrayAddr[randomPool]
+    let anchor_price = _.BN2Str(await MAI_instance.calcValueInAsset(address))
+    let maiBal = (await MAI_instance.balanceOf(account))
+    let maiAmount = ((maiBal * 95)/100).toString()
+    let assetStakeAmount = maiAmount
+    let txStakeAsset = (await MAI_instance.addLiquidityToAssetPool(address, assetStakeAmount, maiAmount, {from:account})) 
+    let pool = (await arrayInst[randomPool].symbol())
+    //await poolBalance(address)
+    //console.log("Minter STAKED! " + "Asset:" + _.BN2Str(_.floorBN(assetStakeAmount/_1))  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + pool)
+  }
 }
 
 //======================Sensible Staker=====================
@@ -225,7 +223,7 @@ async function sensibleStaker(){
  let account = accounts[4]
  let ethSwapAmount = (_1BN * swapETH).toString()
  let txSwap = (await MAI_instance.swapTokenToToken(ETH_ADDRESS, MAI_ADDRESS, ethSwapAmount, {from: account, value: ethSwapAmount}))
- console.log("Sensible SWAPPED! " + swapETH + " for MAI")
+ //console.log("Sensible SWAPPED! " + swapETH + " for MAI")
  let eth_price = _.BN2Str(await MAI_instance.calcValueInMAI(ETH_ADDRESS))
  let maiBal = (await MAI_instance.balanceOf(account))
  let maiAmount = ((maiBal * 99.99)/100).toString()
@@ -233,13 +231,11 @@ async function sensibleStaker(){
  let txStakeMAI = (await MAI_instance.addLiquidityToEtherPool(maiAmount, {from:account, value:ethStakeAmount}))
  txCount += 1
  // await poolBalance(ETH_ADDRESS)
- console.log("Sensible STAKED! " + "Asset:" + _.roundBN2StrD(ethStakeAmount/_1)  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + "ETH")
+ //console.log("Sensible STAKED! " + "Asset:" + _.roundBN2StrD(ethStakeAmount/_1)  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + "ETH")
    
 }
 
 //======================Yolo Staker=====================
-// Purpose : Open CDP - Stakes assymetrically
-// Frequency : Twice a week (NT) || Every 84 seconds (ACLT)
 // Account 5
 async function yoloStaker(){
  let randomPool = Math.floor(Math.random() * 6)+1; 
@@ -250,20 +246,18 @@ async function yoloStaker(){
  let maiAmount = (_1BN * ysMAI).toString()
  let address = arrayAddr[randomPool]
  let txStakeAsset = (await MAI_instance.addLiquidityToAssetPool(address, assetAmount, maiAmount, {from:account})) 
- let pool = (await arrayInst[randomPool].symbol())
- console.log("Yolo STAKED! " + "Asset:" + _.BN2Str(_.floorBN(assetAmount/_1))  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + pool)
+ //let pool = (await arrayInst[randomPool].symbol())
+ //console.log("Yolo STAKED! " + "Asset:" + _.BN2Str(_.floorBN(assetAmount/_1))  + "  MAI:"  +  _.BN2Str(_.floorBN(maiAmount/_1)) + " > " + pool)
  
 }
 
 //======================ETH PRICE BOSS=====================
-// Purpose : Drives the ETH price somewhere - 1% per day
-// Frequency : every hour (NT) || Every 1 second (ACLT)
 // Account 6
 async function ethPriceBoss(){
  let account = accounts[6]
  let ethAmount =  (_1BN * epBETH).toString()
  let txOpenCDP = (await MAI_instance.openCDP(150, {from:account, value: ethAmount}))
- await getCDPDetails(account)
+ //await getCDPDetails(account)
  txCount += 1
  let maiBal = (await MAI_instance.balanceOf(account))
  let ethStakeAmount = (_1BN * 0).toString()
@@ -279,24 +273,18 @@ async function ethPriceBoss(){
 }
 
 //======================LIQUIDATOR =====================
-// Purpose : Liquidates UnSafe CDPs
-// Frequency : Every 4hrs || Every 12 seconds (ACLT)
 // Account 7
-//uint CDP, uint liquidation
 async function liquidatorBot () {
  let account = accounts[7]
  let liquidationAmount = 2500
  let cdpCount = (await MAI_instance.countOfCDPs())
- //console.log(_.BN2Str(cdpCount))
  for(let i = 1; i <= cdpCount; i++){
-   
-   console.log(`checking : ${i}`)
     let canLiquidate = (await MAI_instance.checkLiquidationPoint(i))
     if(canLiquidate == true){
       console.log(`liquidate : ${i}`)
-      //let txliquidate = (await MAI_instance.liquidateCDP(i, liquidationAmount, {from: account}))
-      //txCount +=1
-      //console.log("LIQUIDATED CDP " + i + " Fee " + (_.BN2Str(txliquidate.logs[0].args.feeClaimed)/_1))
+      let txliquidate = (await MAI_instance.liquidateCDP(i, liquidationAmount, {from: account}))
+      txCount +=1
+      console.log("LIQUIDATED CDP " + i + " Fee " + (_.BN2Str(txliquidate.logs[0].args.feeClaimed)/_1))
     }
  }
 }
@@ -371,10 +359,20 @@ async function snapshotData(){
   const paxsheet = workBook.Sheets[workBook.SheetNames[3]];
 let maiPrice = _.BN2Int((await MAI_instance.medianMAIValue()))
 let maiSupply = _.BN2Int((await MAI_instance.totalSupply()))
-
   xlsx.utils.sheet_add_aoa(maisheet, [[(maiPrice/_1),(maiSupply/_1), txCount]], {origin: -1});
 
-  // xlsx.utils.sheet_add_aoa(ethsheet, [[1.00,200, 33]], {origin: -1});
+let eth_price = _.BN2Int((await MAI_instance.calcValueInMAI(ETH_ADDRESS)))
+let ethDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(ETH_ADDRESS)).balanceMAI);
+let ethBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(ETH_ADDRESS)).balanceAsset);
+let ethStakesCount = _.BN2Int((await MAI_instance.calcStakerCount(ETH_ADDRESS)))
+let poolAssetValue = (eth_price/_1)*(ethBalance/_1)
+let poolBaseValue = (maiPrice/_1)*(ethDepth/_1)
+let ethPoolValue = (poolAssetValue + poolBaseValue)
+
+  xlsx.utils.sheet_add_aoa(ethsheet, [[(eth_price/_1),(ethBalance/_1),(ethDepth/_1),ethStakesCount, ethPoolValue]], {origin: -1});
+
+
+
   // xlsx.utils.sheet_add_aoa(daisheet, [[1.00,200, 33]], {origin: -1});
   // xlsx.utils.sheet_add_aoa(paxsheet, [[1.00,200, 33]], {origin: -1});
 
