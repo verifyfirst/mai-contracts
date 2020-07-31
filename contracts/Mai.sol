@@ -151,7 +151,7 @@ contract MAI is ERC20{
     }
 
     function _mint(uint _amount) internal returns (bool success){
-        require(_amount > 0);
+        require(_amount > 0, 'amount must be greater than zero');
         totalSupply = totalSupply.add(_amount);
         balanceOf[address(this)] = balanceOf[address(this)].add(_amount);
         emit Transfer(address(0), address(this), _amount);
@@ -159,7 +159,7 @@ contract MAI is ERC20{
     }
 
     function _burn(uint _amount) internal returns (bool success){
-        require (_amount > 0); require (_amount <= balanceOf[address(this)]);
+        require (_amount > 0, "amount burnt must be greater than zero"); require (_amount <= balanceOf[address(this)], "amount < balance");
         totalSupply = totalSupply.sub(_amount);
         balanceOf[address(this)] = balanceOf[address(this)].sub(_amount);
         emit Transfer(address(this), address(0), _amount);
@@ -171,7 +171,7 @@ contract MAI is ERC20{
         defaultCollateralisation = 150;
         minCollaterisation = 101;
         medianMAIValue = _1;
-        uint genesisPrice = 369;
+        uint genesisPrice = 1258;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
         _mint(purchasingPower*2);
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
@@ -228,7 +228,8 @@ contract MAI is ERC20{
         uint collateralisation;
         require (CDP > 0, "Must be an owner already");
         mapCDP_Data[CDP].collateral += msg.value;
-        uint purchasingPower = calcEtherPPinMAI(mapCDP_Data[CDP].collateral);//how valuable Ether is in MAI
+        uint collateral = mapCDP_Data[CDP].collateral;
+        uint purchasingPower = calcEtherPPinMAI(collateral);//how valuable Ether is in MAI
         if(mapCDP_Data[CDP].debt == 0){
          collateralisation = ((purchasingPower).mul(100)).mul(10);
         }else{
@@ -245,7 +246,8 @@ contract MAI is ERC20{
         uint collateral = mapCDP_Data[CDP].collateral;
         uint purchasingPower = calcEtherPPinMAI(collateral);//how valuable Ether is in MAI
         uint maxMintAmount = (purchasingPower.mul(100)).div(collateralisation);
-        uint additionalMintAmount = maxMintAmount.sub(mapCDP_Data[CDP].debt);
+        uint debt = mapCDP_Data[CDP].debt;
+        uint additionalMintAmount = maxMintAmount.sub(debt);
         mapCDP_Data[CDP].debt += additionalMintAmount;
         _mint(additionalMintAmount);
         require (_transfer(address(this), msg.sender, additionalMintAmount), 'Must transfer mint amount to sender');
@@ -369,7 +371,7 @@ contract MAI is ERC20{
 
     function _removeLiquidity(address _asset, uint _bp) internal returns (uint _outputMAI, uint _outputAsset) {
         require(mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] > 0);
-        require(_bp <= 10000); require(_bp > 0);
+        require(_bp <= 10000,"bp <= 10000"); require(_bp > 0, "bp > zero");
         uint _basisPoints = 10000;
         uint _stakerUnits = mapAsset_ExchangeData[_asset].stakerUnits[msg.sender];
         uint _units = (_stakerUnits.mul(_bp)).div(_basisPoints);
