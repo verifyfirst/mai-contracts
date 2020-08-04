@@ -171,7 +171,7 @@ contract MAI is ERC20{
         defaultCollateralisation = 150;
         minCollaterisation = 101;
         medianMAIValue = _1;
-        uint genesisPrice = 1258;
+        uint genesisPrice = 350;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
         _mint(purchasingPower*2);
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
