@@ -59,6 +59,9 @@ contract MAI is ERC20{
     uint public mintedMAI;
     uint public pooledMAI;
     uint public incentiveFactor = 10;
+    uint public totalInsolvency; 
+    uint public inSolvencyBP = 30;
+    uint public revenue = 0;
     mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
@@ -310,12 +313,17 @@ contract MAI is ERC20{
             uint debtDeleted = (debt.mul(liquidation)).div(basisPoints);
             uint maiBought; uint _y = 0;
             (maiBought, _y) = _swapTokenToToken(address(0), address(this), liquidatedCollateral);
-            uint fee = maiBought - debtDeleted;
+            if(maiBought < debtDeleted){
+            uint insolvency = debtDeleted.sub(maiBought);
+            totalInsolvency = totalInsolvency.add(insolvency);
+            }else{
+            uint fee = maiBought.sub(debtDeleted);
+            require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
+            emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
+            }
             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
             mapCDP_Data[CDP].debt -= debtDeleted;
-            emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
             _burn(debtDeleted);
-            require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
             return true;
         }   else {
             return false;
@@ -390,7 +398,7 @@ contract MAI is ERC20{
 
     function swapTokenToToken(address assetFrom, address assetTo, uint inputAmount) public payable returns (bool success) {
         require((inputAmount > 0), "Must get Asset");
-        uint maiAmount = 0; uint outputAmount = 0;
+        uint maiAmount = 0; uint outputAmount = 0; 
         if(assetFrom == address(0)){
             require ((msg.value == inputAmount), 'must get ETH');
         } else if (assetFrom == address(this)){
@@ -398,7 +406,7 @@ contract MAI is ERC20{
         } else {
             ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
         }
-        (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
+         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
         _handleTransferOut(assetTo, maiAmount, outputAmount,  msg.sender);
         _checkAnchor(assetFrom, assetTo);
@@ -406,24 +414,47 @@ contract MAI is ERC20{
     }
 
     function _swapTokenToToken(address _assetFrom, address _assetTo, uint _amount) internal returns(uint _m, uint _y){ 
+        uint inSolvFee = 0; uint bp = 10000; uint _amountAdjusted = 0;
         if(_assetFrom == address(this)){
-            _m=0;
-            _y = _swapMaiToAsset(_assetTo, _amount);  
-        }
+             _m=0; 
+              inSolvFee = _amount.mul(inSolvencyBP).div(bp);
+           if(totalInsolvency > 0 && inSolvFee <= totalInsolvency){
+            totalInsolvency = totalInsolvency.sub(inSolvFee);
+           } else if (inSolvFee >= totalInsolvency) {
+              revenue = revenue.add(inSolvFee.sub(totalInsolvency));
+              totalInsolvency = 0;
+           } else {
+               revenue = revenue.add(inSolvFee);
+           }
+            _amountAdjusted = _amount.sub(inSolvFee);
+            _y = _swapMaiToAsset(_assetTo, _amountAdjusted);  
+           }
+        
         if(_assetTo == address(this)){
             _m= _swapAssetToMai(_assetFrom, _amount);
             _y = 0;
         }
         if(_assetFrom != address(this) && _assetTo != address(this)){
             _m = _swapAssetToMai(_assetFrom, _amount);
-            _y = _swapMaiToAsset(_assetTo, _m);
+              inSolvFee = _m.mul(inSolvencyBP).div(bp);
+           if(totalInsolvency > 0 && inSolvFee <= totalInsolvency){
+            totalInsolvency = totalInsolvency.sub(inSolvFee);
+             revenue = revenue.add(inSolvFee);
+           } else if (inSolvFee >= totalInsolvency) {
+              revenue = revenue.add(inSolvFee.sub(totalInsolvency));
+              totalInsolvency = 0;
+           } else {
+               revenue = revenue.add(inSolvFee);
+           }
+            _amountAdjusted = _m.sub(inSolvFee);
+              _y = _swapMaiToAsset(_assetTo, _amountAdjusted);  
         }   
         return (_m, _y);
     }
 
     function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
         uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
-        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
+        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;   
         _y = calcCLPSwap(_x, _X, _Y);
         mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
         mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
