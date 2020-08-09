@@ -316,14 +316,17 @@ contract MAI is ERC20{
             if(maiBought < debtDeleted){
             uint insolvency = debtDeleted.sub(maiBought);
             totalInsolvency = totalInsolvency.add(insolvency);
-            }else{
-            uint fee = maiBought.sub(debtDeleted);
-            require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
-            emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
-            }
             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
             mapCDP_Data[CDP].debt -= debtDeleted;
             _burn(debtDeleted);
+            }else{
+            uint fee = maiBought.sub(debtDeleted);
+            require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
+             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
+            mapCDP_Data[CDP].debt -= debtDeleted;
+            _burn(debtDeleted);
+            emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
+            }
             return true;
         }   else {
             return false;

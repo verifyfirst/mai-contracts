@@ -40,10 +40,10 @@ const amountMAI = 200            //Starting MAI balance for anchor pools
 const amountAsset = 201          //Starting Asset balance for anchor pools
 const usd = { "asset": (_1BN * amountAsset).toString(), "mai": (_1BN * amountMAI).toString() }
 const maxCollateral = 4;
-var liquidationAmount = 3333
-const accountTotal = 50
+var liquidationAmount = 3332
+const accountTotal = 100
 // ============Minter Parameters===============
-const minterCollateralETH = 1     // Minter Bot ETH Allowance
+const minterCollateralETH = 0.6     // Minter Bot ETH Allowance
 const minterColRatio = 150  // Minters Default Collaterisation
 //=============Sensible Staker Parameters ================
 const swapETHMAX = 0.4        // Staker Bot ETH Swap
@@ -57,9 +57,11 @@ const ysMAIStake = 5    // Staker Bot MAI
 
 const swapTkn = 1
 //===============eth arbitrageur ==============
-const buyETH = 0.5
-const sellETH = 0.5
-const eCollateralETH = 1
+const buyETHLarge = 1
+const sellETHLarge = 1
+const buyETHSmall = 0.2
+const sellETHSmall = 0.2
+const eCollateralETH = 1.5
 //==============swap token===============
 const swapTokenMAX = 5        // Staker Bot ETH Swap
 const swapTokenMin = 1 
@@ -80,7 +82,7 @@ async function main() {
   await accountSnap()
   let anchorCount = (await MAI_instance.getAnchorsCount())
   if (anchorCount = 5) {
-    for (let i = 1; i <= 3360; i++) {
+    for (let i = 1; i <= 4032; i++) {
       console.log(`hr ${i}`)
       
       if (i == snapShotTracker) {
@@ -115,11 +117,11 @@ async function main() {
       await ethArbitrageur1()
       await liquidatorBot()
       
-      if(i== 3360){
+      if(i== 4032){
         let withDraw = (await withdrawLiquidity())
         let finalSnap = (await snapshotData())
-       let CDPsnap = (await finalCDPSnap())
-       let accSnap =  (await accountSnap())
+        let CDPsnap = (await finalCDPSnap())
+        let accSnap =  (await accountSnap())
        
       }
       
@@ -314,42 +316,21 @@ async function yoloStaker1() {
 
 //======================LIQUIDATOR=====================
 async function liquidatorBot() {
-  let account = accounts[15]
+  let account = accounts[10]
   let cdpCount = (await MAI_instance.countOfCDPs())
   for (let i = 1; i <= cdpCount; i++) {
     let canLiquidate = (await MAI_instance.checkLiquidationPoint(i))
-    if(canLiquidate){
+    if(canLiquidate == true){
       try{
         let txliquidate = (await MAI_instance.liquidateCDP(i, liquidationAmount, { from: account }))
-        await ethArbitrageur1()
+        txCount += 1
+      }catch(err){
+        console.log("failed to liquidate")
       }
-      catch(err){
-        console.log(`Failed to liquidate`)
-      }
-     
+         await ethArbitrageur1()
+       
+          
     }
-    // let existingDebt = _.BN2Str((await MAI_instance.mapCDP_Data(i)).debt)
-    // let existingCollateral = _.BN2Str((await MAI_instance.mapCDP_Data(i)).collateral)
-    // let poolDepth = _.BN2Str((await MAI_instance.mapAsset_ExchangeData(ETH_ADDRESS)).balanceMAI);
-    // let ETHpoolBalance = _.BN2Str((await MAI_instance.mapAsset_ExchangeData(ETH_ADDRESS)).balanceAsset);
-    // let feeCalc = _.BN2Str(m.getLiquidationFee(existingDebt,existingCollateral,poolDepth,ETHpoolBalance, liquidationAmount))
-    // if (canLiquidate == true) {
-    //   if((feeCalc/_1) < 0){
-    //    if(liquidationAmount < 200){
-    //     liquidationAmount = 100
-    //    }else{
-    //     liquidationAmount = liquidationAmount/2
-    //    }
-    //   }else{
-    //     let txliquidate = (await MAI_instance.liquidateCDP(i, liquidationAmount, { from: account }))
-    //     await ethArbitrageur1()
-    //     if(liquidationAmount < 3200){
-    //       let diff = 3200 - liquidationAmount 
-    //       liquidationAmount += diff
-    //     }
-    //     txCount += 1
-    //   }
-      //}
     
   }
 }
@@ -383,38 +364,78 @@ async function swapETH(){
 }
 //======================EHT Arbitrageur=====================
 async function ethArbitrageur1() {
+  //console.log(`eth account ${EthAcc}`)
   let account = accounts[EthAcc]
   let ethAmount = _.getBN(_1 * eCollateralETH)
   let CDP = _.BN2Str(await MAI_instance.mapAddress_MemberData(account))
+  let existingCollateral = _.BN2Int((await MAI_instance.mapCDP_Data(CDP)).collateral)
+        
   let maiBal = (_.BN2Str((await MAI_instance.balanceOf(account))))/_1
   let ethPrice_contract = (_.BN2Str((await MAI_instance.calcValueInMAI(ETH_ADDRESS))))/_1
-  let maiSellAmount = buyETH * ethPrice_contract
-  let ethBuyAmount = (_1BN * maiSellAmount).toString()
-  let ethSellAmount = (_1BN * sellETH).toString()
   if (ethPrice_contract < ethPrice_world) {
+    let diff =  _.BN2Int(m.percentDifference(ethPrice_world,ethPrice_contract ))
+    if(diff > 15){
+      var maiSellAmount = buyETHLarge * ethPrice_contract
+      var ethBuyAmount = _.getBN(_1 * maiSellAmount)
+    }else{
+      var maiSellAmount = buyETHSmall * ethPrice_contract
+      var ethBuyAmount = _.getBN(_1 * maiSellAmount)
+    }
     if(maiBal < maiSellAmount){
       if (CDP > 0) {
-        let existingCollateral = _.BN2Str((await MAI_instance.mapCDP_Data(CDP)).collateral)
-        if(existingCollateral > (_1 * maxCollateral)){
+        if((existingCollateral/_1) > maxCollateral){
           EthAcc +=1
          }
-        (await MAI_instance.addCollateralToCDP({ from: account, to: MAI_ADDRESS, value: ethAmount}))
+        let add = (await MAI_instance.addCollateralToCDP({ from: account, to: MAI_ADDRESS, value: ethAmount}))
         txCount += 1
         try{
-         (await MAI_instance.remintMAIFromCDP(minterColRatio, { from: account, to: MAI_ADDRESS }))
+          let remint = (await MAI_instance.remintMAIFromCDP(minterColRatio, { from: account, to: MAI_ADDRESS }))
           txCount += 1
-        }catch(err){console.log(`Failed remint`)}
+          try{
+            let txBuyETH = (await MAI_instance.swapTokenToToken(MAI_ADDRESS, ETH_ADDRESS, ethBuyAmount, { from: account }))
+            txCount += 1
+          }catch(err){
+            console.log('Failed to buy')
+          }
+          
+        }catch(err){
+          console.log(`Failed remint - eth arber`)
+      }
       } else {
-       (await MAI_instance.openCDP(minterColRatio, { from: account, value: ethAmount }))
+       let open = (await MAI_instance.openCDP(minterColRatio, { from: account, value: ethAmount }))
         txCount += 1
       }
     }else{
-      let txBuyETH = (await MAI_instance.swapTokenToToken(MAI_ADDRESS, ETH_ADDRESS, ethBuyAmount, { from: account }))
-      txCount += 1
+      try{
+        let txBuyETH = (await MAI_instance.swapTokenToToken(MAI_ADDRESS, ETH_ADDRESS, ethBuyAmount, { from: account }))
+        txCount += 1
+      }catch(err){
+        console.log('Failed to buy')
+      }
+      
     }
   } else if (ethPrice_contract > ethPrice_world) {
-    let txSellETH = (await MAI_instance.swapTokenToToken(ETH_ADDRESS, MAI_ADDRESS, ethSellAmount, { from: account, value: ethSellAmount }))
-    txCount += 1
+    let diff =  _.BN2Int(m.percentDifference(ethPrice_contract,ethPrice_world ))
+    if(diff > 15){
+      let ethSellAmount = (_1BN * sellETHLarge).toString()
+      try{
+        let txSellETH = (await MAI_instance.swapTokenToToken(ETH_ADDRESS, MAI_ADDRESS, ethSellAmount, { from: account, value: ethSellAmount }))
+        txCount += 1
+      }catch(err){
+        console.log("failed to sell ")
+      }
+      
+    }else{
+      let ethSellAmount = (_1BN * sellETHSmall).toString()
+      try{
+        let txSellETH = (await MAI_instance.swapTokenToToken(ETH_ADDRESS, MAI_ADDRESS, ethSellAmount, { from: account, value: ethSellAmount }))
+        txCount += 1
+      }catch(err){
+        console.log("failed to sell ")
+      }
+    }
+    
+    
   }
 }
 
@@ -565,60 +586,37 @@ async function snapshotData() {
   
   let ethDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(ETH_ADDRESS)).balanceMAI);
   let ethBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(ETH_ADDRESS)).balanceAsset);
-  let ethpoolAssetValue = (ethBalance / _1) * (ethPrice_contract / _1) 
-  let ethpoolBaseValue = (ethDepth / _1) * (maiPrice / _1) 
-  let ethPoolValue = (ethpoolAssetValue + ethpoolBaseValue)
-  xlsx.utils.sheet_add_aoa(ethsheet, [[, (ethBalance / _1), (ethDepth / _1),  ethPoolValue]], { origin: -1 });
+  xlsx.utils.sheet_add_aoa(ethsheet, [[(ethBalance / _1), (ethDepth / _1)]], { origin: -1 });
    
   
    
    let daiDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(daipool_address)).balanceMAI);
    let daiBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(daipool_address)).balanceAsset);
-  
-   let daipoolAssetValue = (daiBalance / _1) * (daiPrice / _1) 
-   let daipoolBaseValue = (daiDepth / _1) * (maiPrice / _1) 
-   let daiPoolValue = (daipoolAssetValue + daipoolBaseValue)
-   xlsx.utils.sheet_add_aoa(daisheet, [[ (daiBalance / _1), (daiDepth / _1), daiPoolValue]], { origin: -1 });
+   xlsx.utils.sheet_add_aoa(daisheet, [[ (daiBalance / _1), (daiDepth / _1)]], { origin: -1 });
  
    
   
    let paxDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(paxpool_address)).balanceMAI);
    let paxBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(paxpool_address)).balanceAsset);
-   
-   let paxpoolAssetValue =  (paxBalance / _1) * (paxPrice / _1)
-   let paxpoolBaseValue = (paxDepth / _1) * (maiPrice / _1)
-   let paxPoolValue = (paxpoolAssetValue + paxpoolBaseValue)
-   xlsx.utils.sheet_add_aoa(paxsheet, [[ (paxBalance / _1), (paxDepth / _1),  paxPoolValue]], { origin: -1 });
+   xlsx.utils.sheet_add_aoa(paxsheet, [[ (paxBalance / _1), (paxDepth / _1)]], { origin: -1 });
  
    
    
    let usdtDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(usdtpool_address)).balanceMAI);
    let usdtBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(usdtpool_address)).balanceAsset);
- 
-   let usdtpoolAssetValue = (usdtBalance / _1) * (usdtPrice / _1)
-   let usdtpoolBaseValue = (usdtDepth / _1) * (maiPrice / _1) 
-   let usdtPoolValue = (usdtpoolAssetValue + usdtpoolBaseValue)
-   xlsx.utils.sheet_add_aoa(usdtsheet, [[ (usdtBalance / _1), (usdtDepth / _1),  usdtPoolValue]], { origin: -1 });
+   xlsx.utils.sheet_add_aoa(usdtsheet, [[ (usdtBalance / _1), (usdtDepth / _1)]], { origin: -1 });
  
    
    
    let usdcDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(usdcpool_address)).balanceMAI);
    let usdcBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(usdcpool_address)).balanceAsset);
-
-   let usdcpoolAssetValue = (usdcBalance / _1) * (usdcPrice / _1) 
-   let usdcpoolBaseValue = (usdcDepth / _1) * (maiPrice / _1) 
-   let usdcPoolValue = (usdcpoolAssetValue + usdcpoolBaseValue)
-   xlsx.utils.sheet_add_aoa(usdcsheet, [[ (usdcBalance / _1), (usdcDepth / _1),  usdcPoolValue]], { origin: -1 });
+   xlsx.utils.sheet_add_aoa(usdcsheet, [[ (usdcBalance / _1), (usdcDepth / _1)]], { origin: -1 });
  
    
    
    let busdDepth = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(busdpool_address)).balanceMAI);
    let busdBalance = _.BN2Int((await MAI_instance.mapAsset_ExchangeData(busdpool_address)).balanceAsset);
-
-   let busdpoolAssetValue = (busdBalance / _1) * (busdPrice / _1) 
-   let busdpoolBaseValue = (busdDepth / _1) * (maiPrice / _1) 
-   let busdPoolValue = (busdpoolAssetValue + busdpoolBaseValue)
-   xlsx.utils.sheet_add_aoa(busdsheet, [[ (busdBalance / _1), (busdDepth / _1),  busdPoolValue]], { origin: -1 });
+   xlsx.utils.sheet_add_aoa(busdsheet, [[ (busdBalance / _1), (busdDepth / _1)]], { origin: -1 });
  
 
 

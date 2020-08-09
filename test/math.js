@@ -67,6 +67,21 @@ var BigNumber = require('bignumber.js');
   return fee
   }
 
+  function percentDifference (x,y){
+    const two = new BigNumber(2)
+    const hund = new BigNumber(100)
+    const _x = new BigNumber(x)
+    const _y = new BigNumber(y)
+    const denom = _x.minus(_y)
+    const numer = _x.plus(_y)
+    const numerator = numer.div(two)
+    const final = denom.div(numerator)
+    const diff = final.times(hund)
+    return diff
+  }
+
+
+  
 module.exports = {
 calcCLPSwap: function(x, X, Y) {
   return calcCLPSwap(x, X, Y)
@@ -82,6 +97,10 @@ calcPoolUnits: function(a, A, m, M) {
 },
 getLiquidationFee: function(a, A, m, M, b) {
   return getLiquidationFee(a, A, m, M, b)
+}
+,
+percentDifference: function(x,y) {
+  return percentDifference(x,y)
 }
 };
 
