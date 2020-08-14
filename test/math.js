@@ -1,6 +1,6 @@
 var BigNumber = require('bignumber.js');
 
-async function calcCLPSwap(x, X, Y) {
+ function calcCLPSwap(x, X, Y) {
     // y = (x * Y * X)/(x + X)^2
     const _x = new BigNumber(x)
     const _X = new BigNumber(X)
@@ -9,7 +9,6 @@ async function calcCLPSwap(x, X, Y) {
     const denominator = (_x.plus(_X)).times(_x.plus(_X))
     const _y = numerator.div(denominator)
     const y = (new BigNumber(_y));
-
     return y;
   }
   
@@ -52,6 +51,37 @@ async function calcCLPSwap(x, X, Y) {
     return poolUnits;
   }
 
+  function getLiquidationFee(debt,collateral,depth,balance,liquidation ){
+    //console.log(debt,collateral,depth,balance,liquidation)
+    const _debt = new BigNumber(debt)
+    const _collateral = new BigNumber(collateral)
+    const _X = new BigNumber(balance)
+    const _Y = new BigNumber(depth)
+    const liquid = new BigNumber(liquidation)
+    const basisPoints = new BigNumber(10000);
+    const liquidatedCollateral = (_collateral.times(liquid)).div(basisPoints);
+    const debtDeleted = (_debt.times(liquid)).div(basisPoints);
+    const maiBought = calcCLPSwap(liquidatedCollateral, _X, _Y);
+    const fee = maiBought - debtDeleted;
+    //console.log(fee)
+  return fee
+  }
+
+  function percentDifference (x,y){
+    const two = new BigNumber(2)
+    const hund = new BigNumber(100)
+    const _x = new BigNumber(x)
+    const _y = new BigNumber(y)
+    const denom = _x.minus(_y)
+    const numer = _x.plus(_y)
+    const numerator = numer.div(two)
+    const final = denom.div(numerator)
+    const diff = final.times(hund)
+    return diff
+  }
+
+
+  
 module.exports = {
 calcCLPSwap: function(x, X, Y) {
   return calcCLPSwap(x, X, Y)
@@ -64,6 +94,13 @@ calcCLPLiquidation: function(x, X, Y) {
 },
 calcPoolUnits: function(a, A, m, M) {
   return calcPoolUnits(a, A, m, M)
+},
+getLiquidationFee: function(a, A, m, M, b) {
+  return getLiquidationFee(a, A, m, M, b)
+}
+,
+percentDifference: function(x,y) {
+  return percentDifference(x,y)
 }
 };
 

@@ -7,7 +7,7 @@ const math = require('./math.js');
 const help = require('./helper.js');
 
 var MAI = artifacts.require("MAI.sol");
-var USD = artifacts.require("tokenUSD.sol");
+var USD = artifacts.require("tokenUSD1.sol");
 
 var instanceMAI; var addressMAI; var instanceUSD; var addressUSD;
 var acc0; var acc1; var acc2; var acc3;

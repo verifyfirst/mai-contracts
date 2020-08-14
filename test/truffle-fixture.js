@@ -1,10 +1,11 @@
-var MAI = artifacts.require("./MAI.sol");
-var USD1 = artifacts.require( "./tokenUSD1.sol");
-var USD2 = artifacts.require( "./tokenUSD2.sol");
-var USD3 = artifacts.require( "./tokenUSD3.sol");
-var USD4 = artifacts.require( "./tokenUSD4.sol");
-var USD5 = artifacts.require( "./tokenUSD5.sol");
-var USD6 = artifacts.require( "./tokenUSD6.sol");
+
+var MAI = artifacts.require("MAI.sol");
+var USD1 = artifacts.require( "PAXOS.sol");
+var USD2 = artifacts.require( "Tether.sol");
+var USD3 = artifacts.require( "bUSD.sol");
+var USD4 = artifacts.require( "USDC.sol");
+var USD5 = artifacts.require( "DAI.sol");
+var USD6 = artifacts.require( "Koven.sol");
 
 const initialETH = 3 * 10 ** 17; //3
 

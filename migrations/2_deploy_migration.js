@@ -1,19 +1,21 @@
 
-var tokenUSD1 = artifacts.require( "./tokenUSD1.sol");
-var tokenUSD2 = artifacts.require( "./tokenUSD2.sol");
-var tokenUSD3 = artifacts.require( "./tokenUSD3.sol");
-var tokenUSD4 = artifacts.require( "./tokenUSD4.sol");
-var tokenUSD5 = artifacts.require( "./tokenUSD5.sol");
-var tokenUSD6 = artifacts.require( "./tokenUSD6.sol");
-var MAI = artifacts.require( "./MAI.sol");
+var MAI = artifacts.require("MAI.sol");
+var USD1 = artifacts.require( "PAXOS.sol");
+var USD2 = artifacts.require( "Tether.sol");
+var USD3 = artifacts.require( "bUSD.sol");
+var USD4 = artifacts.require( "USDC.sol");
+var USD5 = artifacts.require( "DAI.sol");
+var USD6 = artifacts.require( "Koven.sol");
+
+const initialETH = 3 * 10 ** 19; //30
 
 module.exports = function(deployer) {
-  deployer.deploy(tokenUSD1);
-  deployer.deploy(tokenUSD2);
-  deployer.deploy(tokenUSD3);
-  deployer.deploy(tokenUSD4);
-  deployer.deploy(tokenUSD5);
-  deployer.deploy(tokenUSD6);
-  deployer.deploy(MAI);
+  deployer.deploy(USD1);
+  deployer.deploy(USD2);
+  deployer.deploy(USD3);
+  deployer.deploy(USD4);
+  deployer.deploy(USD5);
+  deployer.deploy(USD6);
+  deployer.deploy(MAI, { value: initialETH});
 };
 

@@ -13,7 +13,6 @@ interface ERC20 {
 }
 
 library SafeMath {
-
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a, "SafeMath: addition overflow");
@@ -60,7 +59,7 @@ library SafeMath {
 }
 
 // Token Contract
-contract tokenUSD1 is ERC20 {
+contract PAXOS is ERC20 {
 
     using SafeMath for uint256;
 
@@ -81,8 +80,8 @@ contract tokenUSD1 is ERC20 {
     // Minting event
     constructor() public{
         balanceOf[msg.sender] = totalSupply;
-        name = "USD1";
-        symbol  = "tUSD";
+        name = "PAXOS";
+        symbol  = "PAX";
         emit Transfer(address(0), msg.sender, totalSupply);
     }
     

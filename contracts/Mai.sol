@@ -1,4 +1,4 @@
-pragma solidity ^0.6.4;
+pragma solidity 0.6.4;
 interface ERC20 {
     function totalSupply() external view returns (uint);
     function balanceOf(address account) external view returns (uint);
@@ -41,32 +41,35 @@ library SafeMath {
 }
 contract MAI is ERC20{
     using SafeMath for uint;
-    string public name = "MAI Token";
+    string public name = "MAI Asset";
     string public symbol = "MAI";
     uint public decimals  = 18;
     uint public override totalSupply;
     uint public _1 = 10**decimals;
-
     bool private notEntered;
 
     mapping(address => uint) public override balanceOf;
     mapping(address => mapping(address => uint)) public override allowance;
-    
+
     uint public minCollaterisation;
     uint public defaultCollateralisation;
     uint public etherPrice;
     uint public medianMAIValue;
-    address[5] public arrayAnchor;
+    address[] public arrayAnchor;
     uint public mintedMAI;
     uint public pooledMAI;
     uint public incentiveFactor = 10;
+    uint public totalInsolvency; 
+    uint public inSolvencyBP = 50;
+    uint public revenue = 0;
+    uint public spendBP = 20;
     mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
         address[] exchanges;
         uint CDP;
     }
-
+  
     mapping(uint => CDPData) public mapCDP_Data;
     uint public countOfCDPs;
     struct CDPData {
@@ -74,10 +77,9 @@ contract MAI is ERC20{
         uint debt;
         address payable owner;
     }
-
     mapping(address => ExchangeData) public mapAsset_ExchangeData;
+    
     address[] public exchanges;
-
      struct ExchangeData {
         bool listed;
         bool isAnchor;
@@ -86,9 +88,11 @@ contract MAI is ERC20{
         address[] stakers;
         uint poolUnits;
         mapping(address => uint) stakerUnits;
+        mapping(address => bool) isActivePoolStaker;
     }
     event Transfer (address indexed from, address indexed to, uint amount);
     event Approval ( address indexed owner, address indexed spender, uint amount);
+
     event NewCDP(uint CDP, uint time, address owner, uint debtIssued, uint collateralHeld, uint collateralisation);
     event UpdateCDP(uint CDP, uint time, address owner, uint debtAdded, uint collateralAdded, uint collateralisation);
     event CloseCDP(uint CDP, uint time, address owner, uint debtPaid, uint etherReturned);
@@ -96,7 +100,33 @@ contract MAI is ERC20{
     event AddLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsIssued);
     event RemoveLiquidity(address asset, address liquidityProvider, uint amountMAI, uint amountAsset, uint unitsClaimed);
     event Swapped(address assetFrom, address assetTo, uint inputAmount, uint maiAmount, uint outPutAmount, address recipient);
-    
+    event AnchorRemoved(address assetAnchor, uint delta, uint assetValue, address recipient);
+    //======##Getters##======
+    function calcStakerUnits(address asset, address staker) public view returns(uint stakerUnits){
+         return (mapAsset_ExchangeData[asset].stakerUnits[staker]);
+    }
+    function calcStakerAddress(address asset, uint index) public view returns(address staker){
+        return(mapAsset_ExchangeData[asset].stakers[index]);
+    }
+    function calcStakerCount(address asset) public view returns (uint){
+        return(mapAsset_ExchangeData[asset].stakers.length);
+    }
+    function getExhangesCount() public view returns (uint){
+        return exchanges.length;
+    }
+    function getAnchorsCount() public view returns (uint){
+        return arrayAnchor.length;
+    }
+    function getMembersCount() public view returns (uint){
+        return members.length;
+    }
+    function getMemberExchangeCount(address member) public view returns (uint){
+        return (mapAddress_MemberData[member].exchanges.length);
+    }
+    function getStakerExchanges (address member, uint index) public view returns (address exchange){
+         return (mapAddress_MemberData[member].exchanges[index]);
+    }
+
     function transfer(address to, uint amount) public override  returns (bool success) {
         _transfer(msg.sender, to, amount);
         return true;
@@ -123,8 +153,9 @@ contract MAI is ERC20{
         _transfer(from, to, amount);
         return true;
     }
+
     function _mint(uint _amount) internal returns (bool success){
-        require(_amount > 0);
+        require(_amount > 0, 'amount must be greater than zero');
         totalSupply = totalSupply.add(_amount);
         balanceOf[address(this)] = balanceOf[address(this)].add(_amount);
         emit Transfer(address(0), address(this), _amount);
@@ -132,65 +163,54 @@ contract MAI is ERC20{
     }
 
     function _burn(uint _amount) internal returns (bool success){
-        require (_amount > 0); require (_amount <= balanceOf[address(this)]);
+        require (_amount > 0, "amount burnt must be greater than zero"); require (_amount <= balanceOf[address(this)], "amount < balance");
         totalSupply = totalSupply.sub(_amount);
         balanceOf[address(this)] = balanceOf[address(this)].sub(_amount);
         emit Transfer(address(this), address(0), _amount);
         return true;
     }
 
-    constructor (address usd1, address usd2, address usd3, address usd4, address usd5) public payable {
+    constructor () public payable {
         notEntered = true;
         defaultCollateralisation = 150;
         minCollaterisation = 101;
         medianMAIValue = _1;
-        arrayAnchor[0] = usd1; arrayAnchor[1] = usd2;
-        arrayAnchor[2] = usd3; arrayAnchor[3] = usd4; arrayAnchor[4] = usd5;
-        // Construct with 3 Eth 
-        // 2 Eth @ hardcoded price -> mint 400 MAI in CDP0
-        // 1 Eth + 200 MAI in address(0) pool
-        // 200 MAI back to sender
-        uint genesisPrice = 200;
+        uint genesisPrice = 330;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
-         _mint(purchasingPower*2);
+        _mint(purchasingPower*2);
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
         mapAsset_ExchangeData[address(0)].balanceMAI = purchasingPower;
+        uint poolUnit = ((msg.value/3).add(purchasingPower))/2;
+        mapAsset_ExchangeData[address(0)].poolUnits = poolUnit;
+        mapAsset_ExchangeData[address(0)].stakers.push(msg.sender);
+        mapAsset_ExchangeData[address(0)].isActivePoolStaker[msg.sender] = true;
+        mapAsset_ExchangeData[address(0)].stakerUnits[msg.sender] += poolUnit;
+        mapAddress_MemberData[msg.sender].exchanges.push(address(0));
         uint mintAmount = (purchasingPower.mul(100)).div(defaultCollateralisation);
-        uint CDP = 0; countOfCDPs = 0;
+        uint CDP = 0; countOfCDPs = 0; 
         mapAddress_MemberData[address(0)].CDP = CDP;
-        mapCDP_Data[CDP].collateral = (msg.value * 2)/3;
+        mapCDP_Data[CDP].collateral = (msg.value.mul(2)).div(3);
         mapCDP_Data[CDP].debt = mintAmount;
         mapCDP_Data[CDP].owner = address(0);
         mapAsset_ExchangeData[address(0)].listed = true;
         exchanges.push(address(0));
-         mapAsset_ExchangeData[usd1].isAnchor = true;
-          mapAsset_ExchangeData[usd2].isAnchor = true;
-           mapAsset_ExchangeData[usd3].isAnchor = true;
-            mapAsset_ExchangeData[usd4].isAnchor = true;
-             mapAsset_ExchangeData[usd5].isAnchor = true;
-
-        
-
         _transfer(address(this), msg.sender, purchasingPower);
-        //emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
-      
+        emit NewCDP(CDP, now, msg.sender, mintAmount, msg.value, defaultCollateralisation);
     }
-    function calcStakerUnits(address asset, address staker) public view returns(uint stakerUnits){
-         return (mapAsset_ExchangeData[asset].stakerUnits[staker]);
-    }
-
-    function calcStakerAddress(address asset, uint index) public view returns(address staker){
-            return(mapAsset_ExchangeData[asset].stakers[index]);
-    }
-
+    
     function addExchange(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
-        require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
-        ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
-        mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
-        mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
-        mapAsset_ExchangeData[asset].listed = true;
-        _addLiquidity(asset, amountAsset, amountMAI);
-        exchanges.push(asset);
+         require((amountMAI > 0) && ((amountAsset > 0)), "Must get Mai or token");
+         _transfer(msg.sender, address(this), amountMAI);
+         ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
+         mapAsset_ExchangeData[asset].balanceMAI = amountMAI;
+         mapAsset_ExchangeData[asset].balanceAsset = amountAsset;
+         exchanges.push(asset);  // Add new exchange
+         mapAsset_ExchangeData[asset].listed = true;
+         uint poolUnitInit = ((amountAsset).add(amountMAI))/2;
+         mapAsset_ExchangeData[asset].poolUnits = poolUnitInit;
+         mapAsset_ExchangeData[asset].stakerUnits[msg.sender] += poolUnitInit;
+         mapAsset_ExchangeData[asset].isActivePoolStaker[msg.sender] = true;
+        emit AddLiquidity(asset, msg.sender, amountMAI, amountAsset, poolUnitInit);
         return true;
     }
 
@@ -209,10 +229,16 @@ contract MAI is ERC20{
     function addCollateralToCDP() public payable returns (bool success) {
         require (msg.value > 0, 'Must be more than 0 to open CDP');
         uint CDP = mapAddress_MemberData[msg.sender].CDP;
+        uint collateralisation;
         require (CDP > 0, "Must be an owner already");
         mapCDP_Data[CDP].collateral += msg.value;
-        uint purchasingPower = calcEtherPPinMAI(mapCDP_Data[CDP].collateral);//how valuable Ether is in MAI
-        uint collateralisation = ((purchasingPower).mul(100)).div(mapCDP_Data[CDP].debt);
+        uint collateral = mapCDP_Data[CDP].collateral;
+        uint purchasingPower = calcEtherPPinMAI(collateral);//how valuable Ether is in MAI
+        if(mapCDP_Data[CDP].debt == 0){
+         collateralisation = ((purchasingPower).mul(100)).mul(10);
+        }else{
+         collateralisation = ((purchasingPower).mul(100)).div(mapCDP_Data[CDP].debt);
+        }
         emit UpdateCDP(CDP, now, msg.sender, 0, msg.value, collateralisation);
         return true;
     }
@@ -223,8 +249,9 @@ contract MAI is ERC20{
         require (CDP != 0, "Must be an owner already");
         uint collateral = mapCDP_Data[CDP].collateral;
         uint purchasingPower = calcEtherPPinMAI(collateral);//how valuable Ether is in MAI
-        uint maxMintAmount = (purchasingPower.mul(collateralisation)).div(100);
-        uint additionalMintAmount = maxMintAmount.sub(mapCDP_Data[CDP].debt);
+        uint maxMintAmount = (purchasingPower.mul(100)).div(collateralisation);
+        uint debt = mapCDP_Data[CDP].debt;
+        uint additionalMintAmount = maxMintAmount.sub(debt);
         mapCDP_Data[CDP].debt += additionalMintAmount;
         _mint(additionalMintAmount);
         require (_transfer(address(this), msg.sender, additionalMintAmount), 'Must transfer mint amount to sender');
@@ -263,9 +290,10 @@ contract MAI is ERC20{
       uint closeAmount = debt.div(basisPoints.div(_liquidation));
       uint collateral = mapCDP_Data[CDP].collateral;
       uint returnAmount = collateral.div(basisPoints.div(_liquidation));
-      require(MAI._approve(msg.sender, address(this), closeAmount), 'Must approve first');
-      require(MAI.transferFrom(msg.sender, address(this), closeAmount), 'must collect debt');
-      require(_burn(closeAmount), 'Must burn debt');
+     // require(MAI._approve(msg.sender, address(this), closeAmount), 'Must approve first');
+      //require(MAI.transferFrom(msg.sender, address(this), closeAmount), 'must collect debt');
+       require (_transfer(msg.sender, address(this), closeAmount), 'Must transfer closeAmount to sender');
+       require(_burn(closeAmount), 'Must burn debt');
       mapCDP_Data[CDP].debt -= closeAmount;
       mapCDP_Data[CDP].collateral -= returnAmount;
       msg.sender.transfer(returnAmount);
@@ -286,21 +314,47 @@ contract MAI is ERC20{
             uint debtDeleted = (debt.mul(liquidation)).div(basisPoints);
             uint maiBought; uint _y = 0;
             (maiBought, _y) = _swapTokenToToken(address(0), address(this), liquidatedCollateral);
-            uint fee = maiBought - debtDeleted;
+            if(maiBought < debtDeleted){
+            uint insolvency = debtDeleted.sub(maiBought);
+            totalInsolvency = totalInsolvency.add(insolvency);
             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
             mapCDP_Data[CDP].debt -= debtDeleted;
-            emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
             _burn(debtDeleted);
+            }else{
+            uint fee = maiBought.sub(debtDeleted);
             require(_transfer(address(this), address(msg.sender), fee), "must transfer fee");
+             mapCDP_Data[CDP].collateral -= liquidatedCollateral;
+            mapCDP_Data[CDP].debt -= debtDeleted;
+            _burn(debtDeleted);
+            emit LiquidateCDP(CDP, now, msg.sender, liquidation, liquidatedCollateral, maiBought, debtDeleted, fee);
+            }
             return true;
         }   else {
             return false;
         }
     }
 
+    function spendRevenue() public returns (bool success){
+        require(totalInsolvency > 0, 'Contract must be in debt');
+        require(revenue > 0, 'Contract must have funds' );
+        uint bp = 10000;
+        if(revenue <= totalInsolvency){
+            totalInsolvency = totalInsolvency.sub(revenue);
+            uint fee = revenue.mul(spendBP).div(bp);
+            revenue = 0; 
+            require(_transfer(address(this), msg.sender, fee), 'Must send caller fee');
+        }else{
+            revenue = revenue.sub(totalInsolvency);
+            uint fee = totalInsolvency.mul(spendBP).div(bp);
+            totalInsolvency = 0; 
+            require(_transfer(address(this), msg.sender, fee), 'Must send caller fee');
+        }
+        return true;
+        
+    }
+
     //==================================================================================//
     // Liquidity functions
-
     function addLiquidityToEtherPool (uint amountMAI) public payable returns (bool success) {
         require((amountMAI > 0) || ((msg.value > 0)), "Must get Mai or Eth");
         //require(transferFrom(msg.sender, address(this), amountMAI), "Must collect MAI");
@@ -318,20 +372,14 @@ contract MAI is ERC20{
     }
  
     function _addLiquidity(address asset, uint a, uint m) internal {
-        if (mapAsset_ExchangeData[asset].listed = false) {                                                         
-            exchanges.push(asset);                                                // Add new exchange
-            mapAsset_ExchangeData[asset].listed = true;
-            mapAsset_ExchangeData[asset].balanceMAI = m;
-            mapAsset_ExchangeData[asset].balanceAsset = a;
-        } else {
-            mapAsset_ExchangeData[asset].balanceMAI += m;
-            mapAsset_ExchangeData[asset].balanceAsset += a;
-        }
-        if (mapAsset_ExchangeData[asset].stakerUnits[msg.sender] == 0) {
+        if (!mapAsset_ExchangeData[asset].isActivePoolStaker[msg.sender]){
             mapAsset_ExchangeData[asset].stakers.push(msg.sender);
             mapAddress_MemberData[msg.sender].exchanges.push(asset);
             members.push(msg.sender);
+            mapAsset_ExchangeData[asset].isActivePoolStaker[msg.sender] = true;
         }
+        mapAsset_ExchangeData[asset].balanceMAI += m;
+        mapAsset_ExchangeData[asset].balanceAsset += a;
         uint M = mapAsset_ExchangeData[asset].balanceMAI;
         uint A = mapAsset_ExchangeData[asset].balanceAsset;
         uint units = calcStakeUnits(a, A, m, M);
@@ -348,17 +396,16 @@ contract MAI is ERC20{
         } else {
             ERC20(asset).transfer(msg.sender, _outputAsset);
         }
-
         require (_transfer(address(this), msg.sender, _outputMAI));
         return true;
     }
 
     function _removeLiquidity(address _asset, uint _bp) internal returns (uint _outputMAI, uint _outputAsset) {
         require(mapAsset_ExchangeData[_asset].stakerUnits[msg.sender] > 0);
-        require(_bp <= 10000); require(_bp > 0);
+        require(_bp <= 10000,"bp <= 10000"); require(_bp > 0, "bp > zero");
         uint _basisPoints = 10000;
         uint _stakerUnits = mapAsset_ExchangeData[_asset].stakerUnits[msg.sender];
-        uint _units = (_stakerUnits * _bp)/_basisPoints;
+        uint _units = (_stakerUnits.mul(_bp)).div(_basisPoints);
         uint _total = mapAsset_ExchangeData[_asset].poolUnits;
         uint _balanceMAI = mapAsset_ExchangeData[_asset].balanceMAI;
         uint _balanceAsset = mapAsset_ExchangeData[_asset].balanceAsset;
@@ -374,7 +421,7 @@ contract MAI is ERC20{
 
     function swapTokenToToken(address assetFrom, address assetTo, uint inputAmount) public payable returns (bool success) {
         require((inputAmount > 0), "Must get Asset");
-        uint maiAmount = 0; uint outputAmount = 0;
+        uint maiAmount = 0; uint outputAmount = 0; 
         if(assetFrom == address(0)){
             require ((msg.value == inputAmount), 'must get ETH');
         } else if (assetFrom == address(this)){
@@ -382,8 +429,7 @@ contract MAI is ERC20{
         } else {
             ERC20(assetFrom).transferFrom(msg.sender, address(this), inputAmount);
         }
-        
-        (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
+         (maiAmount, outputAmount) = _swapTokenToToken(assetFrom, assetTo, inputAmount);
         emit Swapped(assetFrom, assetTo, inputAmount, maiAmount, outputAmount, msg.sender);
         _handleTransferOut(assetTo, maiAmount, outputAmount,  msg.sender);
         _checkAnchor(assetFrom, assetTo);
@@ -391,24 +437,47 @@ contract MAI is ERC20{
     }
 
     function _swapTokenToToken(address _assetFrom, address _assetTo, uint _amount) internal returns(uint _m, uint _y){ 
+        uint inSolvFee = 0; uint bp = 10000; uint _amountAdjusted = 0;
         if(_assetFrom == address(this)){
-            _m=0;
-            _y = _swapMaiToAsset(_assetTo, _amount);  
-        }
+             _m=0; 
+              inSolvFee = _amount.mul(inSolvencyBP).div(bp);
+           if(totalInsolvency > 0 && inSolvFee <= totalInsolvency){
+            totalInsolvency = totalInsolvency.sub(inSolvFee);
+           } else if (inSolvFee >= totalInsolvency) {
+              revenue = revenue.add(inSolvFee.sub(totalInsolvency));
+              totalInsolvency = 0;
+           } else {
+               revenue = revenue.add(inSolvFee);
+           }
+            _amountAdjusted = _amount.sub(inSolvFee);
+            _y = _swapMaiToAsset(_assetTo, _amountAdjusted);  
+           }
+        
         if(_assetTo == address(this)){
             _m= _swapAssetToMai(_assetFrom, _amount);
             _y = 0;
         }
         if(_assetFrom != address(this) && _assetTo != address(this)){
             _m = _swapAssetToMai(_assetFrom, _amount);
-            _y = _swapMaiToAsset(_assetTo, _m);
+              inSolvFee = _m.mul(inSolvencyBP).div(bp);
+           if(totalInsolvency > 0 && inSolvFee <= totalInsolvency){
+            totalInsolvency = totalInsolvency.sub(inSolvFee);
+             revenue = revenue.add(inSolvFee);
+           } else if (inSolvFee >= totalInsolvency) {
+              revenue = revenue.add(inSolvFee.sub(totalInsolvency));
+              totalInsolvency = 0;
+           } else {
+               revenue = revenue.add(inSolvFee);
+           }
+            _amountAdjusted = _m.sub(inSolvFee);
+              _y = _swapMaiToAsset(_assetTo, _amountAdjusted);  
         }   
         return (_m, _y);
     }
 
     function _swapAssetToMai(address _assetFrom, uint _x) internal returns (uint _y){
         uint _X = mapAsset_ExchangeData[_assetFrom].balanceAsset;
-        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;
+        uint _Y = mapAsset_ExchangeData[_assetFrom].balanceMAI;   
         _y = calcCLPSwap(_x, _X, _Y);
         mapAsset_ExchangeData[_assetFrom].balanceAsset += _x;
         mapAsset_ExchangeData[_assetFrom].balanceMAI -= _y;
@@ -426,7 +495,54 @@ contract MAI is ERC20{
         mapAsset_ExchangeData[_assetTo].balanceAsset -= _y;
         return _y;
     }
-function _checkAnchor(address _assetFrom, address _assetTo) internal {
+
+    //======================================================================
+    //Anchors
+    function addAnchor(address asset, uint amountAsset, uint amountMAI) public payable returns (bool success){
+        require((arrayAnchor.length < 5), "must only have 5 anchors");
+        if(!mapAsset_ExchangeData[asset].isAnchor){
+            _transfer(msg.sender, address(this), amountMAI);
+       // require(MAI.transferFrom(msg.sender, address(this), amountMAI), 'must collect mai');
+        ERC20(asset).transferFrom(msg.sender, address(this), amountAsset);
+        mapAsset_ExchangeData[asset].listed = true;
+        mapAsset_ExchangeData[asset].isAnchor = true;
+        _addLiquidity(asset, amountAsset, amountMAI);
+        arrayAnchor.push(asset);
+        exchanges.push(asset);
+        }
+        return true;
+    }
+    // function removeAnchor(address asset) public returns (bool success){
+    //     require((mapAsset_ExchangeData[asset].isAnchor = true), "must be an anchor");
+    //     uint maxAnchorSlip = 10**17;
+    //     uint assetValue = calcValueInAsset(asset);
+    //     uint numerator = assetValue.sub(medianMAIValue);
+    //     uint denominator =(assetValue.add(medianMAIValue)).div(2);
+    //     uint delta = ((_1.mul(numerator)).div(denominator));
+    //     require((delta > maxAnchorSlip), "percentage difference > anchor limit percentage ");
+    //     for (uint i=0; i < arrayAnchor.length; i++) {
+    //          if (arrayAnchor[i] == asset){
+    //              arrayAnchor[i] = arrayAnchor[arrayAnchor.length - 1];
+    //              arrayAnchor.pop();
+    //             }
+    //     }
+    //     //_nukeAnchor(asset);  
+    //     emit AnchorRemoved(asset, delta, assetValue, msg.sender);
+                
+    //     return true;
+    // }
+   
+    // function _nukeAnchor(address _asset) internal returns (bool success){
+    //      uint _outputMAI; uint _outputAsset; uint _bp = 10000;
+    //     for(uint i = 0; i < mapAsset_ExchangeData[_asset].stakers[].length; i++){
+    //     (_outputMAI, _outputAsset) = _removeLiquidity(_asset, _bp);
+    //     ERC20(_asset).transfer(mapAsset_ExchangeData[_asset].stakers[i], _outputAsset);
+    //     require (_transfer(address(this), mapAsset_ExchangeData[_asset].stakers[i], _outputMAI));
+    //     }
+    //     mapAsset_ExchangeData[asset].isAnchor = false;
+    // }
+
+    function _checkAnchor(address _assetFrom, address _assetTo) internal {
         address anchor = address(0);
         if(mapAsset_ExchangeData[_assetFrom].isAnchor){
             anchor = _assetFrom;
@@ -437,10 +553,11 @@ function _checkAnchor(address _assetFrom, address _assetTo) internal {
             updatePrice();
         }
     }
+
     function updatePrice() public {
         uint[5] memory arrayPrices;
         for(uint i = 0; i < 5; i++){
-            arrayPrices[i] = (calcValueInAsset(arrayAnchor[i]));
+            arrayPrices[i] = (calcValueInMAI(arrayAnchor[i]));
         }
         uint[5] memory sortedPriceFeed = _sortArray(arrayPrices);
         medianMAIValue = sortedPriceFeed[2];

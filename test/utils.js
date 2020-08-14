@@ -30,7 +30,7 @@ function ceilBN(BN) {
   return (new BigNumber(BN)).integerValue(0)
 }
 function roundBN2StrD(BN) {
-  const BN_ = (new BigNumber(BN)).toPrecision(13, 1)
+  const BN_ = (new BigNumber(BN)).toPrecision(3, 1)
   return (new BigNumber(BN_)).toFixed()
 }
 function roundBN2StrU(BN) {

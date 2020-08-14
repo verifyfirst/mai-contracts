@@ -7,11 +7,11 @@ const math = require('./math.js');
 const help = require('./helper.js');
 
 var MAI = artifacts.require("MAI.sol");
-var USD1 = artifacts.require( "./tokenUSD1.sol");
-var USD2 = artifacts.require( "./tokenUSD2.sol");
-var USD3 = artifacts.require( "./tokenUSD3.sol");
-var USD4 = artifacts.require( "./tokenUSD4.sol");
-var USD5 = artifacts.require( "./tokenUSD5.sol");
+var USD1 = artifacts.require( "PAXOS.sol");
+var USD2 = artifacts.require( "Tether.sol");
+var USD3 = artifacts.require( "bUSD.sol");
+var USD4 = artifacts.require( "USDC.sol");
+var USD5 = artifacts.require( "DAI.sol");
 
 var arrayInstAnchor = []; var arrayAddrAnchor = []; 
 var medianMAIValue;
@@ -41,36 +41,36 @@ contract('Anchor', function (accounts) {
     constructor(accounts)
     checkValueAnchors()            //===Median price no change
 
-    swapETHToMAI(_dot001, acc0)    //===Median price no change 
-    checkValueAnchors()            
+    // swapETHToMAI(_dot001, acc0)    //===Median price no change 
+    // checkValueAnchors()            
 
 
-    swapMAIToETH(_dot001, acc0)    //===Median price no change 
-    checkValueAnchors()            
+    // swapMAIToETH(_dot001, acc0)    //===Median price no change 
+    // checkValueAnchors()            
   
 
-    swapMAIToUSD(_dot0001, acc0, 0)//===Value of USD1 drecreases
-    checkValueAnchors()            //===Gets bonus
+    // swapMAIToUSD(_dot0001, acc0, 0)//===Value of USD1 drecreases
+    // checkValueAnchors()            //===Gets bonus
 
 
-    swapMAIToUSD(_dot001, acc0, 1) //===Value of USD2 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()            //===Gets bonus
+    // swapMAIToUSD(_dot001, acc0, 1) //===Value of USD2 drecreases === MAI ↑ : USD ↓
+    // checkValueAnchors()            //===Gets bonus
 
 
-    swapUSDToMAI(_dot001, acc0, 4) //===Value of USD5 increases === MAI ↓ : USD ↑
-    checkValueAnchors()           
+    // swapUSDToMAI(_dot001, acc0, 4) //===Value of USD5 increases === MAI ↓ : USD ↑
+    // checkValueAnchors()           
 
 
-    swapETHToUSD(_dot0001, acc0, 2) //===Value of USD1 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()             //===Gets bonus
+    // swapETHToUSD(_dot0001, acc0, 2) //===Value of USD1 drecreases === MAI ↑ : USD ↓
+    // checkValueAnchors()             //===Gets bonus
 
 
-    swapUSDToETH(_dot01, acc0, 2)  //===Value of USD1 increases === MAI ↓ : USD ↑
-    checkValueAnchors()
+    // swapUSDToETH(_dot01, acc0, 2)  //===Value of USD1 increases === MAI ↓ : USD ↑
+    // checkValueAnchors()
  
 
-    swapMAIToUSD(_dot01, acc0, 1)//===Value of USD1 drecreases === MAI ↑ : USD ↓
-    checkValueAnchors()            //===Gets bonus
+    // swapMAIToUSD(_dot01, acc0, 1)//===Value of USD1 drecreases === MAI ↑ : USD ↓
+    // checkValueAnchors()            //===Gets bonus
 
   })
 
