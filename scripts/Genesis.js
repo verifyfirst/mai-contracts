@@ -40,7 +40,7 @@ const amountMAI = 200            //Starting MAI balance for anchor pools
 const amountAsset = 201          //Starting Asset balance for anchor pools
 const usd = { "asset": (_1BN * amountAsset).toString(), "mai": (_1BN * amountMAI).toString() }
 const maxCollateral = 4;
-var liquidationAmount = 3332
+var liquidationAmount = 2500
 const accountTotal = 100
 // ============Minter Parameters===============
 const minterCollateralETH = 0.6     // Minter Bot ETH Allowance
@@ -82,15 +82,13 @@ async function main() {
   await accountSnap()
   let anchorCount = (await MAI_instance.getAnchorsCount())
   if (anchorCount = 5) {
-    for (let i = 1; i <= 4032; i++) {
+    for (let i = 1; i <= 5376; i++) {
       console.log(`hr ${i}`)
       
       if (i == snapShotTracker) {
        await snapshotData()
        let maiPrice = (_.BN2Int((await MAI_instance.medianMAIValue()))/_1)
-       console.log(`MAI ${maiPrice}`)
         console.log(`ETH ACCOUNT ${EthAcc}`)
-        console.log(`Minter ACCOUNT ${accTr}`)
         snapShotTracker += 24
       }
       if (i == fetchPrice){
@@ -116,8 +114,7 @@ async function main() {
       await anchorArbitrageur()
       await ethArbitrageur1()
       await liquidatorBot()
-      
-      if(i== 4032){
+      if(i== 5376){
         let withDraw = (await withdrawLiquidity())
         let finalSnap = (await snapshotData())
         let CDPsnap = (await finalCDPSnap())
@@ -327,7 +324,8 @@ async function liquidatorBot() {
       }catch(err){
         console.log("failed to liquidate")
       }
-         await ethArbitrageur1()
+      await spendRevenue()
+      await ethArbitrageur1()
        
           
     }
@@ -439,7 +437,19 @@ async function ethArbitrageur1() {
   }
 }
 
-
+async function spendRevenue(){
+  let insolvency = (await MAI_instance.totalInsolvency())
+  let revenue = (await MAI_instance.revenue())
+  let account = accounts[5]
+  if((insolvency/_1) > 100 && (revenue/_1) > 100 ){
+    try{
+      let spendRevenue = (await MAI_instance.spendRevenue({from:account}))
+    }catch(err){
+      console.log('out of revenue')
+    }
+   
+  }
+}
 //======================Anchor Arbitrageur=====================
 async function anchorArbitrageur() {
   let randomPool = Math.floor(Math.random() * 6);

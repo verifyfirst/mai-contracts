@@ -60,8 +60,9 @@ contract MAI is ERC20{
     uint public pooledMAI;
     uint public incentiveFactor = 10;
     uint public totalInsolvency; 
-    uint public inSolvencyBP = 30;
+    uint public inSolvencyBP = 50;
     uint public revenue = 0;
+    uint public spendBP = 20;
     mapping(address => MemberData) public mapAddress_MemberData;
     address[] public members;
     struct MemberData {
@@ -174,7 +175,7 @@ contract MAI is ERC20{
         defaultCollateralisation = 150;
         minCollaterisation = 101;
         medianMAIValue = _1;
-        uint genesisPrice = 350;
+        uint genesisPrice = 330;
         uint purchasingPower = (msg.value/3) * genesisPrice; 
         _mint(purchasingPower*2);
         mapAsset_ExchangeData[address(0)].balanceAsset = msg.value/3;  
@@ -331,6 +332,25 @@ contract MAI is ERC20{
         }   else {
             return false;
         }
+    }
+
+    function spendRevenue() public returns (bool success){
+        require(totalInsolvency > 0, 'Contract must be in debt');
+        require(revenue > 0, 'Contract must have funds' );
+        uint bp = 10000;
+        if(revenue <= totalInsolvency){
+            totalInsolvency = totalInsolvency.sub(revenue);
+            uint fee = revenue.mul(spendBP).div(bp);
+            revenue = 0; 
+            require(_transfer(address(this), msg.sender, fee), 'Must send caller fee');
+        }else{
+            revenue = revenue.sub(totalInsolvency);
+            uint fee = totalInsolvency.mul(spendBP).div(bp);
+            totalInsolvency = 0; 
+            require(_transfer(address(this), msg.sender, fee), 'Must send caller fee');
+        }
+        return true;
+        
     }
 
     //==================================================================================//
